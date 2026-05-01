@@ -491,3 +491,9 @@ web/
 | 数据库 | SQLite (better-sqlite3) |
 | AI SDK | OpenAI SDK |
 | 认证 | JWT + HttpOnly Cookie |
+
+---
+
+## 开发约束
+
+**前端开发必须使用 `frontend-design` 技能**：所有前端页面和组件开发时，必须调用 `/frontend-design` 技能确保设计质量。
