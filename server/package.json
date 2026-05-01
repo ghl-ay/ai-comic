@@ -1,0 +1,24 @@
+{
+  "name": "ai-comic-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "egg-scripts start --daemon --title=ai-comic-server",
+    "stop": "egg-scripts stop --title=ai-comic-server",
+    "dev": "egg-bin dev",
+    "test": "egg-bin test"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.0.0",
+    "egg": "^3.17.0",
+    "egg-scripts": "^2.17.0",
+    "jsonwebtoken": "^9.0.2",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "egg-bin": "^6.6.0"
+  },
+  "egg": {
+    "declarations": true
+  }
+}
