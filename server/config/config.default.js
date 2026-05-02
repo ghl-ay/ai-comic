@@ -25,6 +25,9 @@ exports.database = {
 // 角色参考图存储目录
 exports.characterImageDir = 'public/images/characters';
 
+// 漫画图片存储目录
+exports.comicImageDir = 'public/images/comics';
+
 // 静态文件配置
 exports.static = {
   prefix: '/images/',
