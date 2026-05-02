@@ -27,3 +27,13 @@ npm-debug.log*
 # Temp
 *.tmp
 *.temp
+
+# Database (contains sensitive data)
+server/database/*.db
+server/database/*.db-journal
+*.sqlite
+*.sqlite3
+
+# Auto-generated typings
+server/typings/
+server/run/
