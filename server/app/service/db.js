@@ -176,6 +176,167 @@ class DbService extends Service {
       return this.createAiConfig(userId, type, provider, apiKey, baseUrl, model);
     }
   }
+
+  // 漫画相关
+  createComic(userId, title, stylePrompt) {
+    const stmt = this.db.prepare(
+      'INSERT INTO comics (user_id, title, style_prompt) VALUES (?, ?, ?)'
+    );
+    const result = stmt.run(userId, title, stylePrompt || null);
+    return result.lastInsertRowid;
+  }
+
+  findComicsByUserId(userId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM comics WHERE user_id = ? ORDER BY created_at DESC'
+    );
+    return stmt.all(userId);
+  }
+
+  findComicById(id) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM comics WHERE id = ?'
+    );
+    return stmt.get(id);
+  }
+
+  findComicByIdAndUserId(id, userId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM comics WHERE id = ? AND user_id = ?'
+    );
+    return stmt.get(id, userId);
+  }
+
+  updateComic(id, userId, data) {
+    const fields = [];
+    const values = [];
+
+    if (data.title !== undefined) {
+      fields.push('title = ?');
+      values.push(data.title);
+    }
+    if (data.style_prompt !== undefined) {
+      fields.push('style_prompt = ?');
+      values.push(data.style_prompt);
+    }
+    if (data.cover_image !== undefined) {
+      fields.push('cover_image = ?');
+      values.push(data.cover_image);
+    }
+    if (data.status !== undefined) {
+      fields.push('status = ?');
+      values.push(data.status);
+    }
+
+    if (fields.length === 0) {
+      return false;
+    }
+
+    values.push(id, userId);
+    const stmt = this.db.prepare(
+      `UPDATE comics SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
+    );
+    const result = stmt.run(...values);
+    return result.changes > 0;
+  }
+
+  deleteComic(id, userId) {
+    const stmt = this.db.prepare(
+      'DELETE FROM comics WHERE id = ? AND user_id = ?'
+    );
+    const result = stmt.run(id, userId);
+    return result.changes > 0;
+  }
+
+  // 章节相关
+  createChapter(comicId, chapterNumber, title, layoutType) {
+    const stmt = this.db.prepare(
+      'INSERT INTO chapters (comic_id, chapter_number, title, layout_type) VALUES (?, ?, ?, ?)'
+    );
+    const result = stmt.run(comicId, chapterNumber, title || null, layoutType || 4);
+    return result.lastInsertRowid;
+  }
+
+  findChaptersByComicId(comicId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM chapters WHERE comic_id = ? ORDER BY chapter_number ASC'
+    );
+    return stmt.all(comicId);
+  }
+
+  findChapterById(id) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM chapters WHERE id = ?'
+    );
+    return stmt.get(id);
+  }
+
+  findChapterByIdAndComicId(id, comicId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM chapters WHERE id = ? AND comic_id = ?'
+    );
+    return stmt.get(id, comicId);
+  }
+
+  findLatestChapter(comicId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM chapters WHERE comic_id = ? ORDER BY chapter_number DESC LIMIT 1'
+    );
+    return stmt.get(comicId);
+  }
+
+  updateChapter(id, data) {
+    const fields = [];
+    const values = [];
+
+    if (data.title !== undefined) {
+      fields.push('title = ?');
+      values.push(data.title);
+    }
+    if (data.layout_type !== undefined) {
+      fields.push('layout_type = ?');
+      values.push(data.layout_type);
+    }
+    if (data.script_content !== undefined) {
+      fields.push('script_content = ?');
+      values.push(data.script_content);
+    }
+    if (data.page_image !== undefined) {
+      fields.push('page_image = ?');
+      values.push(data.page_image);
+    }
+    if (data.status !== undefined) {
+      fields.push('status = ?');
+      values.push(data.status);
+    }
+
+    if (fields.length === 0) {
+      return false;
+    }
+
+    values.push(id);
+    const stmt = this.db.prepare(
+      `UPDATE chapters SET ${fields.join(', ')} WHERE id = ?`
+    );
+    const result = stmt.run(...values);
+    return result.changes > 0;
+  }
+
+  deleteChapter(id) {
+    const stmt = this.db.prepare(
+      'DELETE FROM chapters WHERE id = ?'
+    );
+    const result = stmt.run(id);
+    return result.changes > 0;
+  }
+
+  countChaptersByComicId(comicId) {
+    const stmt = this.db.prepare(
+      'SELECT COUNT(*) as count FROM chapters WHERE comic_id = ?'
+    );
+    const result = stmt.get(comicId);
+    return result.count;
+  }
 }
 
 module.exports = DbService;
