@@ -8,6 +8,13 @@ describe('test/app/service/ai-image.test.js', () => {
     it('defaults to gpt-image-2', () => {
       assert.strictEqual(AiImageService.DEFAULT_IMAGE_MODEL, 'gpt-image-2');
     });
+
+    it('waits up to 10 minutes for Grsai draw results by default', () => {
+      assert.strictEqual(
+        AiImageService.DEFAULT_GRSAI_POLL_INTERVAL_MS * AiImageService.DEFAULT_GRSAI_MAX_POLL_ATTEMPTS,
+        10 * 60 * 1000
+      );
+    });
   });
 
   describe('buildComicPagePrompt()', () => {
@@ -103,6 +110,122 @@ describe('test/app/service/ai-image.test.js', () => {
       });
 
       assert.strictEqual(request.body.response_format, 'url');
+    });
+  });
+
+  describe('Grsai draw API compatibility', () => {
+    it('detects Grsai image configurations', () => {
+      assert.strictEqual(AiImageService.isGrsaiConfig({
+        provider: 'grsai',
+        baseUrl: 'https://grsai.dakka.com.cn/v1',
+      }), true);
+
+      assert.strictEqual(AiImageService.isGrsaiConfig({
+        provider: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+      }), false);
+    });
+
+    it('builds Grsai draw API URLs from either host or v1 base URL', () => {
+      assert.strictEqual(
+        AiImageService.buildGrsaiApiUrl('https://grsai.dakka.com.cn', 'completions'),
+        'https://grsai.dakka.com.cn/v1/draw/completions'
+      );
+      assert.strictEqual(
+        AiImageService.buildGrsaiApiUrl('https://grsai.dakka.com.cn/v1', 'result'),
+        'https://grsai.dakka.com.cn/v1/draw/result'
+      );
+    });
+
+    it('submits reference urls to Grsai draw completions and polls the result', async () => {
+      const calls = [];
+      const fetchImpl = async (url, options) => {
+        calls.push({ url, body: JSON.parse(options.body) });
+
+        if (url.endsWith('/v1/draw/completions')) {
+          return {
+            ok: true,
+            json: async () => ({
+              code: 0,
+              data: { id: 'task-1' },
+            }),
+          };
+        }
+
+        return {
+          ok: true,
+          json: async () => ({
+            code: 0,
+            data: {
+              id: 'task-1',
+              progress: 100,
+              status: 'succeeded',
+              results: [
+                { url: 'https://example.com/generated.png' },
+              ],
+            },
+          }),
+        };
+      };
+
+      const response = await AiImageService.executeGrsaiDrawRequest({
+        apiKey: 'key',
+        baseUrl: 'https://grsai.dakka.com.cn/v1',
+        model: 'gpt-image-2',
+        prompt: 'prompt with character details',
+        referenceUrls: [
+          'https://comic.example.com/images/characters/a.png',
+        ],
+        fetchImpl,
+        pollIntervalMs: 0,
+      });
+
+      assert.deepStrictEqual(response, {
+        data: [
+          { url: 'https://example.com/generated.png' },
+        ],
+      });
+      assert.deepStrictEqual(calls, [
+        {
+          url: 'https://grsai.dakka.com.cn/v1/draw/completions',
+          body: {
+            model: 'gpt-image-2',
+            prompt: 'prompt with character details',
+            aspectRatio: '1:1',
+            urls: [
+              'https://comic.example.com/images/characters/a.png',
+            ],
+            webHook: '-1',
+            shutProgress: false,
+          },
+        },
+        {
+          url: 'https://grsai.dakka.com.cn/v1/draw/result',
+          body: {
+            id: 'task-1',
+          },
+        },
+      ]);
+    });
+
+    it('uploads local reference images before sending them to Grsai', async () => {
+      const uploads = [];
+      const urls = await AiImageService.uploadReferenceImages([
+        '/local/character.png',
+        '/local/previous.png',
+      ], async imagePath => {
+        uploads.push(imagePath);
+        return `https://cos.example.com/${imagePath.split('/').pop()}`;
+      });
+
+      assert.deepStrictEqual(uploads, [
+        '/local/character.png',
+        '/local/previous.png',
+      ]);
+      assert.deepStrictEqual(urls, [
+        'https://cos.example.com/character.png',
+        'https://cos.example.com/previous.png',
+      ]);
     });
   });
 

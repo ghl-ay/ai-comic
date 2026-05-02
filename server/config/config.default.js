@@ -18,6 +18,15 @@ exports.cookie = {
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
 };
 
+exports.tencentCos = {
+  secretId: process.env.TENCENT_COS_SECRET_ID || '',
+  secretKey: process.env.TENCENT_COS_SECRET_KEY || '',
+  bucket: process.env.TENCENT_COS_BUCKET || '',
+  region: process.env.TENCENT_COS_REGION || '',
+  publicBaseUrl: process.env.TENCENT_COS_PUBLIC_BASE_URL || '',
+  keyPrefix: process.env.TENCENT_COS_KEY_PREFIX || 'ai-print/reference',
+};
+
 exports.database = {
   path: './database/comic.db',
 };
