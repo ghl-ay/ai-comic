@@ -105,6 +105,115 @@ class AiImageService extends Service {
       }).on('error', reject);
     });
   }
+
+  async generateComicPage(params) {
+    const { stylePrompt, layoutType, script, characterReferences, previousChapterImage } = params;
+
+    const aiConfig = await this.getClient(this.ctx.state.user.id);
+    if (!aiConfig) {
+      this.ctx.throw(500, 'AI 图片服务未配置');
+    }
+
+    const { client, model } = aiConfig;
+
+    // 构建提示词
+    const panelDescriptions = script.panels.map((panel, index) => {
+      return `Panel ${index + 1}: ${panel.scene}`;
+    }).join('\n');
+
+    let prompt = `Create a ${layoutType}-panel manga page in ${stylePrompt} style.
+
+Panel layout: ${layoutType} panels arranged in traditional manga grid format.
+
+Panel descriptions:
+${panelDescriptions}
+
+Character references:
+${characterReferences.map(c => `- ${c.name}: use provided reference image`).join('\n')}
+
+Requirements:
+- Generate a single manga page with ${layoutType} distinct panels
+- Each panel should match its description
+- Keep characters consistent with reference images
+- Use black and white manga style with clear panel borders
+- No text or speech bubbles (will be added later)`;
+
+    if (previousChapterImage) {
+      prompt += `\n- Maintain visual continuity with the previous chapter's art style`;
+    }
+
+    try {
+      // 准备图片输入（角色参考图）
+      const imageInputs = [];
+      for (const charRef of characterReferences) {
+        if (charRef.imageUrl) {
+          const imagePath = path.join(
+            this.app.config.characterImageDir || 'public/images/characters',
+            path.basename(charRef.imageUrl)
+          );
+          if (fs.existsSync(imagePath)) {
+            const imageBuffer = fs.readFileSync(imagePath);
+            const base64 = imageBuffer.toString('base64');
+            imageInputs.push({
+              type: 'image_url',
+              image_url: {
+                url: `data:image/png;base64,${base64}`,
+              },
+            });
+          }
+        }
+      }
+
+      // 如果有上一章图片，也添加到输入
+      if (previousChapterImage) {
+        const prevImagePath = path.join(
+          this.app.config.comicImageDir || 'public/images/comics',
+          previousChapterImage
+        );
+        if (fs.existsSync(prevImagePath)) {
+          const imageBuffer = fs.readFileSync(prevImagePath);
+          const base64 = imageBuffer.toString('base64');
+          imageInputs.push({
+            type: 'image_url',
+            image_url: {
+              url: `data:image/png;base64,${base64}`,
+            },
+          });
+        }
+      }
+
+      // 调用 GPT-image API
+      const response = await client.images.generate({
+        model,
+        prompt,
+        n: 1,
+        size: '1024x1024',
+        response_format: 'url',
+      });
+
+      const imageUrl = response.data[0].url;
+
+      // 下载并保存图片
+      const imageBuffer = await this.downloadImage(imageUrl);
+      const filename = `page_${Date.now()}.png`;
+      const imageDir = this.app.config.comicImageDir || 'public/images/comics';
+
+      // 确保目录存在
+      if (!fs.existsSync(imageDir)) {
+        fs.mkdirSync(imageDir, { recursive: true });
+      }
+
+      const filepath = path.join(imageDir, filename);
+      fs.writeFileSync(filepath, imageBuffer);
+
+      return {
+        imagePath: filename,
+      };
+    } catch (err) {
+      this.ctx.logger.error('Comic page generation error:', err);
+      this.ctx.throw(500, `漫画页面生成失败: ${err.message}`);
+    }
+  }
 }
 
 module.exports = AiImageService;
