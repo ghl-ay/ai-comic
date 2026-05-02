@@ -9,4 +9,12 @@ module.exports = app => {
 
   // 需要登录的接口
   router.get('/api/auth/me', app.middleware.jwt(), controller.auth.me);
+
+  // 角色相关（需要登录）
+  router.get('/api/characters', app.middleware.jwt(), controller.character.index);
+  router.post('/api/characters', app.middleware.jwt(), controller.character.create);
+  router.get('/api/characters/:id', app.middleware.jwt(), controller.character.show);
+  router.put('/api/characters/:id', app.middleware.jwt(), controller.character.update);
+  router.delete('/api/characters/:id', app.middleware.jwt(), controller.character.destroy);
+  router.post('/api/characters/:id/generate-reference', app.middleware.jwt(), controller.character.generateReference);
 };
