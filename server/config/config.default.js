@@ -21,3 +21,12 @@ exports.cookie = {
 exports.database = {
   path: './database/comic.db',
 };
+
+// 角色参考图存储目录
+exports.characterImageDir = 'public/images/characters';
+
+// 静态文件配置
+exports.static = {
+  prefix: '/images/',
+  dir: 'public/images/',
+};
