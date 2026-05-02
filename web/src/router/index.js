@@ -19,6 +19,16 @@ const routes = [
     component: () => import('../views/Comics.vue'),
   },
   {
+    path: '/comics/:id',
+    name: 'ComicDetail',
+    component: () => import('../views/ComicDetail.vue'),
+  },
+  {
+    path: '/create/:comicId/:chapterId?',
+    name: 'CreateChapter',
+    component: () => import('../views/CreateChapter.vue'),
+  },
+  {
     path: '/characters',
     name: 'Characters',
     component: () => import('../views/Characters.vue'),
