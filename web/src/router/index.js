@@ -23,6 +23,11 @@ const routes = [
     name: 'Characters',
     component: () => import('../views/Characters.vue'),
   },
+  {
+    path: '/settings/ai',
+    name: 'AiConfig',
+    component: () => import('../views/AiConfig.vue'),
+  },
 ]
 
 const router = createRouter({

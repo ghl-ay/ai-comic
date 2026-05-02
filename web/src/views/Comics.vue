@@ -7,6 +7,15 @@
           <h1>漫画列表</h1>
           <div>
             <v-btn
+              color="secondary"
+              variant="text"
+              to="/settings/ai"
+              class="mr-2"
+            >
+              <v-icon left>mdi-cog</v-icon>
+              AI 配置
+            </v-btn>
+            <v-btn
               color="primary"
               variant="text"
               to="/characters"
