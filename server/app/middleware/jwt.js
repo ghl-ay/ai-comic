@@ -13,7 +13,7 @@ module.exports = (options, app) => {
     }
 
     try {
-      const decoded = jwt.verify(token, app.config.jwt.secret);
+      const decoded = jwt.verify(token, ctx.app.config.jwt.secret);
       ctx.state.user = {
         id: decoded.id,
         username: decoded.username,
