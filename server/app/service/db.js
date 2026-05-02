@@ -104,6 +104,78 @@ class DbService extends Service {
     const result = stmt.run(id, userId);
     return result.changes > 0;
   }
+
+  // AI 配置相关
+  createAiConfig(userId, type, provider, apiKey, baseUrl, model) {
+    const stmt = this.db.prepare(
+      'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    const result = stmt.run(userId, type, provider, apiKey, baseUrl, model);
+    return result.lastInsertRowid;
+  }
+
+  findAiConfigsByUserId(userId) {
+    const stmt = this.db.prepare(
+      'SELECT id, user_id, type, provider, base_url, model, created_at, updated_at FROM ai_configs WHERE user_id = ?'
+    );
+    return stmt.all(userId);
+  }
+
+  findAiConfigByUserIdAndType(userId, type) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM ai_configs WHERE user_id = ? AND type = ?'
+    );
+    return stmt.get(userId, type);
+  }
+
+  updateAiConfig(id, userId, data) {
+    const fields = [];
+    const values = [];
+
+    if (data.provider !== undefined) {
+      fields.push('provider = ?');
+      values.push(data.provider);
+    }
+    if (data.api_key !== undefined) {
+      fields.push('api_key = ?');
+      values.push(data.api_key);
+    }
+    if (data.base_url !== undefined) {
+      fields.push('base_url = ?');
+      values.push(data.base_url);
+    }
+    if (data.model !== undefined) {
+      fields.push('model = ?');
+      values.push(data.model);
+    }
+
+    if (fields.length === 0) {
+      return false;
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id, userId);
+    const stmt = this.db.prepare(
+      `UPDATE ai_configs SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
+    );
+    const result = stmt.run(...values);
+    return result.changes > 0;
+  }
+
+  upsertAiConfig(userId, type, provider, apiKey, baseUrl, model) {
+    const existing = this.findAiConfigByUserIdAndType(userId, type);
+    if (existing) {
+      this.updateAiConfig(existing.id, userId, {
+        provider,
+        api_key: apiKey,
+        base_url: baseUrl,
+        model,
+      });
+      return existing.id;
+    } else {
+      return this.createAiConfig(userId, type, provider, apiKey, baseUrl, model);
+    }
+  }
 }
 
 module.exports = DbService;
