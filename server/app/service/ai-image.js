@@ -5,30 +5,42 @@ const fs = require('fs');
 const path = require('path');
 
 class AiImageService extends Service {
-  getClient() {
-    // 从数据库获取用户配置或系统默认配置
-    // 目前使用环境变量或默认配置
-    const config = {
-      apiKey: process.env.OPENAI_API_KEY || '',
-      baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com',
-      model: process.env.OPENAI_IMAGE_MODEL || 'dall-e-3',
-    };
+  async getClient(userId) {
+    // 从数据库获取用户配置
+    const config = await this.ctx.service.aiConfig.getAiConfigWithKey(userId, 'image');
 
-    if (!config.apiKey) {
-      return null;
+    if (!config || !config.apiKey) {
+      // 回退到环境变量
+      const envConfig = {
+        apiKey: process.env.OPENAI_API_KEY || '',
+        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com',
+        model: process.env.OPENAI_IMAGE_MODEL || 'dall-e-3',
+      };
+
+      if (!envConfig.apiKey) {
+        return null;
+      }
+
+      return {
+        client: new OpenAI({
+          apiKey: envConfig.apiKey,
+          baseURL: envConfig.baseURL,
+        }),
+        model: envConfig.model,
+      };
     }
 
     return {
       client: new OpenAI({
         apiKey: config.apiKey,
-        baseURL: config.baseURL,
+        baseURL: config.baseUrl,
       }),
       model: config.model,
     };
   }
 
   async generateCharacterReference(appearance) {
-    const aiConfig = this.getClient();
+    const aiConfig = await this.getClient(this.ctx.state.user.id);
 
     if (!aiConfig) {
       this.ctx.throw(500, 'AI 图片服务未配置');

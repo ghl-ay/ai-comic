@@ -17,4 +17,9 @@ module.exports = app => {
   router.put('/api/characters/:id', app.middleware.jwt(), controller.character.update);
   router.delete('/api/characters/:id', app.middleware.jwt(), controller.character.destroy);
   router.post('/api/characters/:id/generate-reference', app.middleware.jwt(), controller.character.generateReference);
+
+  // AI 配置相关（需要登录）
+  router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);
+  router.put('/api/ai-config/text', app.middleware.jwt(), controller.aiConfig.saveText);
+  router.put('/api/ai-config/image', app.middleware.jwt(), controller.aiConfig.saveImage);
 };
