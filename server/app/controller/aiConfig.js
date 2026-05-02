@@ -8,7 +8,7 @@ class AiConfigController extends Controller {
     ctx.body = { configs };
   }
 
-  async saveText() {
+  async updateText() {
     const { ctx } = this;
     const { provider, apiKey, baseUrl, model } = ctx.request.body;
 
@@ -31,7 +31,7 @@ class AiConfigController extends Controller {
     }
   }
 
-  async saveImage() {
+  async updateImage() {
     const { ctx } = this;
     const { provider, apiKey, baseUrl, model } = ctx.request.body;
 

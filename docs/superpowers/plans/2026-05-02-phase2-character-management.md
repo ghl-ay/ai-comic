@@ -48,7 +48,7 @@ web/
 **Files:**
 - Modify: `server/app/service/db.js`
 
-- [ ] **Step 1: 添加角色相关数据库方法**
+- [x] **Step 1: 添加角色相关数据库方法**
 
 在 `server/app/service/db.js` 的 `DbService` 类中添加以下方法：
 
@@ -164,7 +164,7 @@ class DbService extends Service {
 module.exports = DbService;
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -181,7 +181,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Create: `server/app/service/ai-image.js`
 
-- [ ] **Step 1: 创建 AI 图片服务**
+- [x] **Step 1: 创建 AI 图片服务**
 
 ```javascript
 // server/app/service/ai-image.js
@@ -284,7 +284,7 @@ class AiImageService extends Service {
 module.exports = AiImageService;
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -304,7 +304,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Create: `server/app/service/character.js`
 
-- [ ] **Step 1: 创建角色服务**
+- [x] **Step 1: 创建角色服务**
 
 ```javascript
 // server/app/service/character.js
@@ -387,7 +387,7 @@ class CharacterService extends Service {
 module.exports = CharacterService;
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -407,7 +407,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Create: `server/app/controller/character.js`
 
-- [ ] **Step 1: 创建角色控制器**
+- [x] **Step 1: 创建角色控制器**
 
 ```javascript
 // server/app/controller/character.js
@@ -547,7 +547,7 @@ class CharacterController extends Controller {
 module.exports = CharacterController;
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -567,7 +567,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Modify: `server/app/router.js`
 
-- [ ] **Step 1: 添加角色路由**
+- [x] **Step 1: 添加角色路由**
 
 修改 `server/app/router.js`：
 
@@ -594,7 +594,7 @@ module.exports = app => {
 };
 ```
 
-- [ ] **Step 2: 测试角色 API**
+- [x] **Step 2: 测试角色 API**
 
 ```bash
 # 创建角色
@@ -604,7 +604,7 @@ curl -X POST http://127.0.0.1:7001/api/characters \
   -d '{"name":"小明","description":"阳光开朗的男孩","appearance":"黑发短发，蓝色眼睛，穿着白色T恤和牛仔裤"}'
 ```
 
-- [ ] **Step 3: 提交**
+- [x] **Step 3: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -623,7 +623,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Create: `web/src/api/character.js`
 
-- [ ] **Step 1: 创建角色 API 封装**
+- [x] **Step 1: 创建角色 API 封装**
 
 ```javascript
 // web/src/api/character.js
@@ -667,7 +667,7 @@ export default {
 }
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -684,7 +684,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Modify: `web/src/router/index.js`
 
-- [ ] **Step 1: 添加角色路由**
+- [x] **Step 1: 添加角色路由**
 
 修改 `web/src/router/index.js`：
 
@@ -746,7 +746,7 @@ router.beforeEach(async (to, from, next) => {
 export default router
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -765,7 +765,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 注意：此页面必须使用 `/frontend-design` 技能进行设计。
 
-- [ ] **Step 1: 创建角色管理页面**
+- [x] **Step 1: 创建角色管理页面**
 
 ```vue
 <!-- web/src/views/Characters.vue -->
@@ -1031,7 +1031,7 @@ onMounted(() => {
 </script>
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -1053,7 +1053,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Modify: `web/src/views/Comics.vue`
 
-- [ ] **Step 1: 添加导航到角色管理**
+- [x] **Step 1: 添加导航到角色管理**
 
 修改 `web/src/views/Comics.vue`：
 
@@ -1107,7 +1107,7 @@ async function logout() {
 </script>
 ```
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -1124,7 +1124,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 **Files:**
 - Modify: `server/config/config.default.js`
 
-- [ ] **Step 1: 添加静态文件和图片目录配置**
+- [x] **Step 1: 添加静态文件和图片目录配置**
 
 修改 `server/config/config.default.js`：
 
@@ -1163,13 +1163,13 @@ exports.static = {
 };
 ```
 
-- [ ] **Step 2: 确保图片目录存在**
+- [x] **Step 2: 确保图片目录存在**
 
 ```bash
 mkdir -p /Users/philip/Documents/code/ai-print/server/public/images/characters
 ```
 
-- [ ] **Step 3: 提交**
+- [x] **Step 3: 提交**
 
 ```bash
 cd /Users/philip/Documents/code/ai-print
@@ -1183,10 +1183,10 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ## 完成检查
 
-- [ ] 后端角色 API 可正常访问
-- [ ] 前端角色页面可正常显示
-- [ ] 可以创建、编辑、删除角色
-- [ ] 可以生成角色参考图（需配置 AI API Key）
+- [x] 后端角色 API 可正常访问
+- [x] 前端角色页面可正常显示
+- [x] 可以创建、编辑、删除角色
+- [x] 可以生成角色参考图（需配置 AI API Key）
 
 ---
 
