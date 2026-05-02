@@ -37,3 +37,5 @@ server/database/*.db-journal
 # Auto-generated typings
 server/typings/
 server/run/
+
+server/public/images/*
