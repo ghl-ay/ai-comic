@@ -34,7 +34,7 @@
               v-if="comic.cover_image"
               :src="`/images/comics/${comic.cover_image}`"
               height="300"
-              cover
+              contain
             />
             <v-sheet v-else height="300" class="d-flex align-center justify-center bg-grey-lighten-2">
               <v-icon size="64" color="grey">mdi-book-open-variant</v-icon>

@@ -28,7 +28,7 @@
             v-if="character.reference_image"
             :src="character.reference_image"
             height="200"
-            cover
+            contain
           />
           <v-sheet v-else height="200" class="d-flex align-center justify-center bg-grey-lighten-2">
             <v-icon size="64" color="grey">mdi-account</v-icon>
