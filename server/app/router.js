@@ -18,8 +18,23 @@ module.exports = app => {
   router.delete('/api/characters/:id', app.middleware.jwt(), controller.character.destroy);
   router.post('/api/characters/:id/generate-reference', app.middleware.jwt(), controller.character.generateReference);
 
+  // 漫画相关（需要登录）
+  router.get('/api/comics', app.middleware.jwt(), controller.comic.index);
+  router.post('/api/comics', app.middleware.jwt(), controller.comic.create);
+  router.get('/api/comics/:id', app.middleware.jwt(), controller.comic.show);
+  router.put('/api/comics/:id', app.middleware.jwt(), controller.comic.update);
+  router.delete('/api/comics/:id', app.middleware.jwt(), controller.comic.destroy);
+
+  // 章节相关（需要登录）
+  router.post('/api/comics/:id/chapters', app.middleware.jwt(), controller.chapter.create);
+  router.get('/api/chapters/:id', app.middleware.jwt(), controller.chapter.show);
+  router.put('/api/chapters/:id', app.middleware.jwt(), controller.chapter.update);
+  router.delete('/api/chapters/:id', app.middleware.jwt(), controller.chapter.destroy);
+  router.post('/api/chapters/:id/generate-script', app.middleware.jwt(), controller.chapter.generateScript);
+  router.post('/api/chapters/:id/generate-image', app.middleware.jwt(), controller.chapter.generateImage);
+
   // AI 配置相关（需要登录）
   router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);
-  router.put('/api/ai-config/text', app.middleware.jwt(), controller.aiConfig.saveText);
-  router.put('/api/ai-config/image', app.middleware.jwt(), controller.aiConfig.saveImage);
+  router.put('/api/ai-config/text', app.middleware.jwt(), controller.aiConfig.updateText);
+  router.put('/api/ai-config/image', app.middleware.jwt(), controller.aiConfig.updateImage);
 };
