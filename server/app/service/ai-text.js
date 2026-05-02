@@ -3,6 +3,96 @@ const Service = require('egg').Service;
 const OpenAI = require('openai');
 
 class AiTextService extends Service {
+  static parseScriptContent(content, layoutType) {
+    const script = AiTextService.parseJsonObject(content);
+
+    // 验证并规范化输出
+    if (!script.panels || !Array.isArray(script.panels)) {
+      throw new Error('AI 返回的脚本格式不正确');
+    }
+
+    // 确保分镜数量正确
+    script.panels = script.panels.slice(0, layoutType);
+
+    // 确保每个分镜有正确的字段
+    script.panels = script.panels.map((panel, index) => ({
+      number: index + 1,
+      scene: panel.scene || '',
+      dialogue: panel.dialogue || '',
+      characters: Array.isArray(panel.characters) ? panel.characters : [],
+    }));
+
+    // 如果分镜数量不足，补充空分镜
+    while (script.panels.length < layoutType) {
+      script.panels.push({
+        number: script.panels.length + 1,
+        scene: '',
+        dialogue: '',
+        characters: [],
+      });
+    }
+
+    return script;
+  }
+
+  static parseJsonObject(content) {
+    if (typeof content !== 'string' || !content.trim()) {
+      throw new Error('AI 返回内容为空');
+    }
+
+    try {
+      return JSON.parse(content);
+    } catch (_) {
+      // Some OpenAI-compatible providers may prepend thinking text even when
+      // response_format=json_object is requested.
+    }
+
+    for (const candidate of AiTextService.findJsonObjectCandidates(content)) {
+      try {
+        return JSON.parse(candidate);
+      } catch (_) {
+        // Keep looking; earlier braces may come from non-JSON thinking text.
+      }
+    }
+
+    throw new Error('AI 返回的脚本不是有效 JSON');
+  }
+
+  static * findJsonObjectCandidates(content) {
+    for (let start = content.indexOf('{'); start !== -1; start = content.indexOf('{', start + 1)) {
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+
+      for (let index = start; index < content.length; index++) {
+        const char = content[index];
+
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+          } else if (char === '\\') {
+            escaped = true;
+          } else if (char === '"') {
+            inString = false;
+          }
+          continue;
+        }
+
+        if (char === '"') {
+          inString = true;
+        } else if (char === '{') {
+          depth++;
+        } else if (char === '}') {
+          depth--;
+          if (depth === 0) {
+            yield content.slice(start, index + 1);
+            break;
+          }
+        }
+      }
+    }
+  }
+
   async getClient(userId) {
     // 从数据库获取用户配置
     const config = await this.ctx.service.aiConfig.getAiConfigWithKey(userId, 'text');
@@ -90,33 +180,7 @@ class AiTextService extends Service {
       });
 
       const content = response.choices[0].message.content;
-      const script = JSON.parse(content);
-
-      // 验证并规范化输出
-      if (!script.panels || !Array.isArray(script.panels)) {
-        throw new Error('AI 返回的脚本格式不正确');
-      }
-
-      // 确保分镜数量正确
-      script.panels = script.panels.slice(0, layoutType);
-
-      // 确保每个分镜有正确的字段
-      script.panels = script.panels.map((panel, index) => ({
-        number: index + 1,
-        scene: panel.scene || '',
-        dialogue: panel.dialogue || '',
-        characters: Array.isArray(panel.characters) ? panel.characters : [],
-      }));
-
-      // 如果分镜数量不足，补充空分镜
-      while (script.panels.length < layoutType) {
-        script.panels.push({
-          number: script.panels.length + 1,
-          scene: '',
-          dialogue: '',
-          characters: [],
-        });
-      }
+      const script = AiTextService.parseScriptContent(content, layoutType);
 
       return script;
     } catch (err) {

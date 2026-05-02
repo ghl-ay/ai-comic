@@ -163,7 +163,17 @@ class ChapterService extends Service {
         characterRefs.push({
           id: char.id,
           name: char.name,
+          description: char.description,
+          appearance: char.appearance,
           imageUrl: char.reference_image,
+        });
+      } else if (char) {
+        characterRefs.push({
+          id: char.id,
+          name: char.name,
+          description: char.description,
+          appearance: char.appearance,
+          imageUrl: '',
         });
       }
     }

@@ -5,6 +5,134 @@ const fs = require('fs');
 const path = require('path');
 
 class AiImageService extends Service {
+  static DEFAULT_IMAGE_MODEL = 'gpt-image-2';
+
+  static buildComicPagePrompt(params) {
+    const { stylePrompt, layoutType, script, characterReferences, previousChapterImage } = params;
+    const charactersById = new Map(characterReferences.map(character => [ character.id, character ]));
+
+    const panelDescriptions = script.panels.map((panel, index) => {
+      const panelCharacters = Array.isArray(panel.characters) ? panel.characters : [];
+      const characterNames = panelCharacters
+        .map(id => charactersById.get(id)?.name || `Character ${id}`)
+        .join(', ') || 'none specified';
+
+      return [
+        `Panel ${index + 1}:`,
+        `Scene: ${panel.scene || ''}`,
+        `Dialogue / speech bubbles: ${panel.dialogue || '(no dialogue)'}`,
+        `Characters in panel: ${characterNames}`,
+      ].join('\n');
+    }).join('\n\n');
+
+    const characterDescriptions = characterReferences.length > 0
+      ? characterReferences.map(character => {
+        return [
+          `ID ${character.id} - ${character.name}`,
+          `Description: ${character.description || 'Not provided'}`,
+          `Appearance: ${character.appearance || 'Not provided'}`,
+          `Reference image: ${character.imageUrl ? 'provided as input image' : 'not provided'}`,
+        ].join('\n');
+      }).join('\n\n')
+      : 'No character library entries were provided.';
+
+    let prompt = `Create a single ${layoutType}-panel comic page in this visual style: ${stylePrompt}.
+
+Panel layout:
+${layoutType} distinct panels arranged in a clean comic grid with clear panel borders.
+
+Character library:
+${characterDescriptions}
+
+Panel script:
+${panelDescriptions}
+
+Requirements:
+- Match each panel scene, action, and character list exactly.
+- Use the character library as the source of truth for character design, clothing, body type, hairstyle, and visual personality.
+- If reference images are provided, preserve those designs across every panel.
+- Readable Chinese speech bubbles for every non-empty dialogue line.
+- Do not omit dialogue. Keep speech bubble text concise, legible, and placed inside the correct panel.
+- Preserve the requested visual style and do not override it with another color mode.`;
+
+    if (previousChapterImage) {
+      prompt += '\n- Maintain visual continuity with the previous chapter reference image.';
+    }
+
+    return prompt;
+  }
+
+  static buildComicPageRequest(params) {
+    const { model, prompt, imageInputs } = params;
+
+    if (imageInputs.length > 0) {
+      return {
+        method: 'edit',
+        body: {
+          model,
+          prompt,
+          image: imageInputs,
+          n: 1,
+          size: '1024x1024',
+        },
+      };
+    }
+
+    return {
+      method: 'generate',
+      body: AiImageService.buildGenerateImageRequest({ model, prompt }),
+    };
+  }
+
+  static buildGenerateImageRequest(params) {
+    const { model, prompt } = params;
+    const body = {
+      model,
+      prompt,
+      n: 1,
+      size: '1024x1024',
+    };
+
+    if (!AiImageService.isGptImageModel(model)) {
+      body.response_format = 'url';
+    }
+
+    return body;
+  }
+
+  static isGptImageModel(model) {
+    return typeof model === 'string' && model.startsWith('gpt-image');
+  }
+
+  static extractImageBuffer(response) {
+    const image = response.data && response.data[0];
+    if (!image) {
+      throw new Error('AI 图片服务未返回图片');
+    }
+
+    if (image.b64_json) {
+      return Buffer.from(image.b64_json, 'base64');
+    }
+
+    return null;
+  }
+
+  static async executeComicPageRequest(client, request) {
+    try {
+      return await client.images[request.method](request.body);
+    } catch (err) {
+      if (request.method !== 'edit' || err.status !== 404) {
+        throw err;
+      }
+
+      const fallbackBody = AiImageService.buildGenerateImageRequest({
+        model: request.body.model,
+        prompt: request.body.prompt,
+      });
+      return await client.images.generate(fallbackBody);
+    }
+  }
+
   async getClient(userId) {
     // 从数据库获取用户配置
     const config = await this.ctx.service.aiConfig.getAiConfigWithKey(userId, 'image');
@@ -14,7 +142,7 @@ class AiImageService extends Service {
       const envConfig = {
         apiKey: process.env.OPENAI_API_KEY || '',
         baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com',
-        model: process.env.OPENAI_IMAGE_MODEL || 'dall-e-3',
+        model: process.env.OPENAI_IMAGE_MODEL || AiImageService.DEFAULT_IMAGE_MODEL,
       };
 
       if (!envConfig.apiKey) {
@@ -51,18 +179,16 @@ class AiImageService extends Service {
     const prompt = `Character reference sheet, full body front view, ${appearance}, white background, clean design, consistent character design, anime manga style, high quality, detailed. No text, no watermark.`;
 
     try {
-      const response = await client.images.generate({
-        model,
-        prompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'url',
-      });
+      const response = await client.images.generate(
+        AiImageService.buildGenerateImageRequest({ model, prompt })
+      );
 
-      const imageUrl = response.data[0].url;
+      let imageBuffer = AiImageService.extractImageBuffer(response);
+      if (!imageBuffer) {
+        const imageUrl = response.data[0].url;
+        imageBuffer = await this.downloadImage(imageUrl);
+      }
 
-      // 下载并保存图片
-      const imageBuffer = await this.downloadImage(imageUrl);
       const filename = `character_${Date.now()}.png`;
       const filepath = path.join(this.app.config.characterImageDir || 'public/images/characters', filename);
 
@@ -116,31 +242,13 @@ class AiImageService extends Service {
 
     const { client, model } = aiConfig;
 
-    // 构建提示词
-    const panelDescriptions = script.panels.map((panel, index) => {
-      return `Panel ${index + 1}: ${panel.scene}`;
-    }).join('\n');
-
-    let prompt = `Create a ${layoutType}-panel manga page in ${stylePrompt} style.
-
-Panel layout: ${layoutType} panels arranged in traditional manga grid format.
-
-Panel descriptions:
-${panelDescriptions}
-
-Character references:
-${characterReferences.map(c => `- ${c.name}: use provided reference image`).join('\n')}
-
-Requirements:
-- Generate a single manga page with ${layoutType} distinct panels
-- Each panel should match its description
-- Keep characters consistent with reference images
-- Use black and white manga style with clear panel borders
-- No text or speech bubbles (will be added later)`;
-
-    if (previousChapterImage) {
-      prompt += `\n- Maintain visual continuity with the previous chapter's art style`;
-    }
+    const prompt = AiImageService.buildComicPagePrompt({
+      stylePrompt,
+      layoutType,
+      script,
+      characterReferences,
+      previousChapterImage,
+    });
 
     try {
       // 准备图片输入（角色参考图）
@@ -152,14 +260,7 @@ Requirements:
             path.basename(charRef.imageUrl)
           );
           if (fs.existsSync(imagePath)) {
-            const imageBuffer = fs.readFileSync(imagePath);
-            const base64 = imageBuffer.toString('base64');
-            imageInputs.push({
-              type: 'image_url',
-              image_url: {
-                url: `data:image/png;base64,${base64}`,
-              },
-            });
+            imageInputs.push(fs.createReadStream(imagePath));
           }
         }
       }
@@ -171,30 +272,24 @@ Requirements:
           previousChapterImage
         );
         if (fs.existsSync(prevImagePath)) {
-          const imageBuffer = fs.readFileSync(prevImagePath);
-          const base64 = imageBuffer.toString('base64');
-          imageInputs.push({
-            type: 'image_url',
-            image_url: {
-              url: `data:image/png;base64,${base64}`,
-            },
-          });
+          imageInputs.push(fs.createReadStream(prevImagePath));
         }
       }
 
-      // 调用 GPT-image API
-      const response = await client.images.generate({
+      const request = AiImageService.buildComicPageRequest({
         model,
         prompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'url',
+        imageInputs,
       });
 
-      const imageUrl = response.data[0].url;
+      const response = await AiImageService.executeComicPageRequest(client, request);
 
-      // 下载并保存图片
-      const imageBuffer = await this.downloadImage(imageUrl);
+      let imageBuffer = AiImageService.extractImageBuffer(response);
+      if (!imageBuffer) {
+        const imageUrl = response.data[0].url;
+        imageBuffer = await this.downloadImage(imageUrl);
+      }
+
       const filename = `page_${Date.now()}.png`;
       const imageDir = this.app.config.comicImageDir || 'public/images/comics';
 
