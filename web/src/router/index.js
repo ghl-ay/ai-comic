@@ -18,6 +18,11 @@ const routes = [
     name: 'Comics',
     component: () => import('../views/Comics.vue'),
   },
+  {
+    path: '/characters',
+    name: 'Characters',
+    component: () => import('../views/Characters.vue'),
+  },
 ]
 
 const router = createRouter({
