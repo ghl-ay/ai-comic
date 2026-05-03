@@ -20,25 +20,31 @@ export const useThemeStore = defineStore('theme', () => {
   const currentTheme = ref(getInitialTheme())
 
   // 应用主题到 Vuetify
-  function applyTheme(vuetifyInstance) {
-    vuetifyInstance.theme.global.name.value = currentTheme.value
+  function applyTheme(vuetifyTheme) {
+    // 使用 Vuetify 3.5+ 的新 API
+    if (typeof vuetifyTheme.change === 'function') {
+      vuetifyTheme.change(currentTheme.value)
+    } else {
+      // 兼容旧版本
+      vuetifyTheme.global.name.value = currentTheme.value
+    }
   }
 
   // 切换主题
-  function toggleTheme(vuetifyInstance) {
+  function toggleTheme(vuetifyTheme) {
     currentTheme.value = currentTheme.value === 'light' ? 'dark' : 'light'
-    applyTheme(vuetifyInstance)
+    applyTheme(vuetifyTheme)
     localStorage.setItem(STORAGE_KEY, currentTheme.value)
   }
 
   // 监听系统主题变化
-  function watchSystemTheme(vuetifyInstance) {
+  function watchSystemTheme(vuetifyTheme) {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     mediaQuery.addEventListener('change', (e) => {
       // 仅当用户未手动设置时跟随系统
       if (!localStorage.getItem(STORAGE_KEY)) {
         currentTheme.value = e.matches ? 'dark' : 'light'
-        applyTheme(vuetifyInstance)
+        applyTheme(vuetifyTheme)
       }
     })
   }
