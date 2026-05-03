@@ -35,6 +35,21 @@ const vuetify = createVuetify({
       },
     },
   },
+  defaults: {
+    VCard: {
+      rounded: 'lg',
+      elevation: 2,
+    },
+    VBtn: {
+      rounded: 'lg',
+    },
+    VTextField: {
+      rounded: 'lg',
+    },
+    VTextarea: {
+      rounded: 'lg',
+    },
+  },
 })
 
 export default vuetify
