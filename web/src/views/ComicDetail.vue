@@ -289,7 +289,22 @@ async function exportPdf() {
 
       try {
         const imgData = await loadImage(`/images/comics/${chapter.page_image}`)
-        pdf.addImage(imgData, 'JPEG', 10, 10, 190, 277)
+        // 计算保持宽高比的尺寸
+        const imgRatio = imgData.width / imgData.height
+        const pageWidth = 190
+        const pageHeight = 277
+        let drawWidth, drawHeight, x, y
+
+        if (imgRatio > pageWidth / pageHeight) {
+          drawWidth = pageWidth
+          drawHeight = pageWidth / imgRatio
+        } else {
+          drawHeight = pageHeight
+          drawWidth = pageHeight * imgRatio
+        }
+        x = (pageWidth - drawWidth) / 2 + 10
+        y = (pageHeight - drawHeight) / 2 + 10
+        pdf.addImage(imgData.dataUrl, 'JPEG', x, y, drawWidth, drawHeight)
       } catch (e) {
         console.error(`加载图片失败: ${chapter.page_image}`, e)
       }
@@ -315,7 +330,11 @@ function loadImage(url) {
       canvas.height = img.height
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0)
-      resolve(canvas.toDataURL('image/jpeg', 0.95))
+      resolve({
+        dataUrl: canvas.toDataURL('image/jpeg', 0.95),
+        width: img.width,
+        height: img.height
+      })
     }
     img.onerror = reject
     img.src = url
