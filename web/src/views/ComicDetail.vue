@@ -28,6 +28,16 @@
                 <v-icon left>mdi-book-open-page-variant</v-icon>
                 预览漫画
               </v-btn>
+              <v-btn
+                variant="outlined"
+                color="secondary"
+                class="mr-2"
+                @click="exportPdf"
+                :loading="exporting"
+              >
+                <v-icon left>mdi-download</v-icon>
+                导出漫画
+              </v-btn>
               <v-btn color="primary" @click="openCreateChapterDialog">
                 <v-icon left>mdi-plus</v-icon>
                 创建章节
@@ -176,6 +186,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { jsPDF } from 'jspdf'
 import comicApi from '../api/comic'
 import chapterApi from '../api/chapter'
 import ComicPreview from '../components/ComicPreview.vue'
@@ -192,6 +203,7 @@ const creating = ref(false)
 const deleting = ref(false)
 const showPreview = ref(false)
 const showNoImageHint = ref(false)
+const exporting = ref(false)
 
 const layoutOptions = [
   { title: '4 格分镜', value: 4 },
@@ -249,6 +261,65 @@ function openPreview() {
     return
   }
   showPreview.value = true
+}
+
+async function exportPdf() {
+  const chaptersWithImages = comic.value.chapters?.filter(ch => ch.page_image) || []
+  if (chaptersWithImages.length === 0) {
+    showNoImageHint.value = true
+    return
+  }
+
+  exporting.value = true
+  try {
+    const sortedChapters = [...chaptersWithImages].sort((a, b) => a.chapter_number - b.chapter_number)
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    for (let i = 0; i < sortedChapters.length; i++) {
+      const chapter = sortedChapters[i]
+
+      if (i > 0) {
+        pdf.addPage()
+      }
+
+      try {
+        const imgData = await loadImage(`/images/comics/${chapter.page_image}`)
+        pdf.addImage(imgData, 'JPEG', 10, 10, 190, 277)
+      } catch (e) {
+        console.error(`加载图片失败: ${chapter.page_image}`, e)
+      }
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    pdf.save(`${comic.value.title}-${today}.pdf`)
+  } catch (e) {
+    console.error('导出 PDF 失败', e)
+    alert('导出失败，请重试')
+  } finally {
+    exporting.value = false
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/jpeg', 0.95))
+    }
+    img.onerror = reject
+    img.src = url
+  })
 }
 
 function confirmDeleteChapter(chapter) {
