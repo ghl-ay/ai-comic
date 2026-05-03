@@ -40,3 +40,6 @@ server/typings/
 server/run/
 
 server/public/images/*
+
+# Superpowers skill temp files
+.superpowers/
