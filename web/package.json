@@ -13,6 +13,7 @@
     "axios": "^1.7.0",
     "pinia": "^2.1.0",
     "vue": "^3.4.0",
+    "vue-easy-lightbox": "^1.19.0",
     "vue-router": "^4.3.0",
     "vuetify": "^3.5.0"
   },

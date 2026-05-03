@@ -18,10 +18,21 @@
               </v-btn>
               <h1 class="d-inline">{{ comic.title }}</h1>
             </div>
-            <v-btn color="primary" @click="openCreateChapterDialog">
-              <v-icon left>mdi-plus</v-icon>
-              创建章节
-            </v-btn>
+            <div>
+              <v-btn
+                variant="outlined"
+                color="primary"
+                class="mr-2"
+                @click="openPreview"
+              >
+                <v-icon left>mdi-book-open-page-variant</v-icon>
+                预览漫画
+              </v-btn>
+              <v-btn color="primary" @click="openCreateChapterDialog">
+                <v-icon left>mdi-plus</v-icon>
+                创建章节
+              </v-btn>
+            </div>
           </div>
         </v-col>
       </v-row>
@@ -143,6 +154,21 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- 漫画预览 -->
+      <ComicPreview
+        v-model="showPreview"
+        :chapters="comic?.chapters || []"
+      />
+
+      <!-- 无图片提示 -->
+      <v-snackbar
+        v-model="showNoImageHint"
+        :timeout="2000"
+        color="warning"
+      >
+        暂无漫画图片
+      </v-snackbar>
     </template>
   </v-container>
 </template>
@@ -152,6 +178,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import comicApi from '../api/comic'
 import chapterApi from '../api/chapter'
+import ComicPreview from '../components/ComicPreview.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -163,6 +190,8 @@ const deleteChapterDialog = ref(false)
 const deleteChapterTarget = ref(null)
 const creating = ref(false)
 const deleting = ref(false)
+const showPreview = ref(false)
+const showNoImageHint = ref(false)
 
 const layoutOptions = [
   { title: '4 格分镜', value: 4 },
@@ -211,6 +240,15 @@ async function createChapter() {
 
 function goToCreate(chapterId) {
   router.push(`/create/${route.params.id}/${chapterId}`)
+}
+
+function openPreview() {
+  const chaptersWithImages = comic.value.chapters?.filter(ch => ch.page_image) || []
+  if (chaptersWithImages.length === 0) {
+    showNoImageHint.value = true
+    return
+  }
+  showPreview.value = true
 }
 
 function confirmDeleteChapter(chapter) {
