@@ -24,6 +24,15 @@
               <v-icon left>mdi-cog</v-icon>
               AI 设置
             </v-btn>
+            <v-btn
+              color="default"
+              variant="text"
+              class="mr-2"
+              @click="toggleTheme"
+            >
+              <v-icon left>{{ isDark ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
+              {{ isDark ? '浅色' : '深色' }}
+            </v-btn>
             <v-btn color="error" variant="text" @click="logout">
               <v-icon left>mdi-logout</v-icon>
               登出
@@ -150,13 +159,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
 import comicApi from '../api/comic'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const vuetifyTheme = useTheme()
+const themeStore = useThemeStore()
+
+const isDark = computed(() => themeStore.currentTheme === 'dark')
+
+function toggleTheme() {
+  themeStore.toggleTheme(vuetifyTheme)
+}
 
 const comics = ref([])
 const createDialog = ref(false)
@@ -234,5 +253,7 @@ async function logout() {
 
 onMounted(() => {
   loadComics()
+  themeStore.applyTheme(vuetifyTheme)
+  themeStore.watchSystemTheme(vuetifyTheme)
 })
 </script>
