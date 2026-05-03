@@ -1,6 +1,6 @@
 <!-- web/src/views/CreateChapter.vue -->
 <template>
-  <v-container>
+  <v-container fluid>
     <v-row v-if="loading">
       <v-col cols="12" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
@@ -21,218 +21,204 @@
         </v-col>
       </v-row>
 
-      <!-- 步骤指示器 -->
+      <!-- 左侧垂直 Tabs + 右侧内容 -->
       <v-row class="mt-4">
         <v-col cols="12">
-          <v-stepper v-model="currentStep" alt-labels>
-            <v-stepper-header>
-              <v-stepper-item
-                :value="1"
-                :complete="currentStep > 1"
-                @click="currentStep = 1"
-                style="cursor: pointer"
+          <v-card>
+            <v-layout>
+              <!-- 左侧垂直导航 -->
+              <v-tabs
+                v-model="currentStep"
+                direction="vertical"
+                color="primary"
               >
-                选择角色
-              </v-stepper-item>
-              <v-divider />
-              <v-stepper-item
-                :value="2"
-                :complete="currentStep > 2"
-                @click="currentStep = 2"
-                style="cursor: pointer"
-              >
-                生成分镜脚本
-              </v-stepper-item>
-              <v-divider />
-              <v-stepper-item
-                :value="3"
-                :complete="currentStep > 3"
-                @click="currentStep = 3"
-                style="cursor: pointer"
-              >
-                生成漫画图片
-              </v-stepper-item>
-            </v-stepper-header>
+                <v-tab :value="1" :disabled="false">
+                  <v-icon start>mdi-account-group</v-icon>
+                  选择角色
+                </v-tab>
+                <v-tab :value="2" :disabled="false">
+                  <v-icon start>mdi-script-text</v-icon>
+                  生成分镜脚本
+                </v-tab>
+                <v-tab :value="3" :disabled="false">
+                  <v-icon start>mdi-image</v-icon>
+                  生成漫画图片
+                </v-tab>
+              </v-tabs>
 
-            <v-stepper-window>
-              <!-- Step 1: 选择角色 -->
-              <v-stepper-window-item :value="1">
-                <v-card flat>
-                  <v-card-title>选择本章出场角色</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col
-                        v-for="char in characters"
-                        :key="char.id"
-                        cols="6"
-                        sm="4"
-                        md="3"
-                      >
-                        <v-card
-                          :color="selectedCharacters.includes(char.id) ? 'primary' : undefined"
-                          :variant="selectedCharacters.includes(char.id) ? 'outlined' : undefined"
-                          @click="toggleCharacter(char.id)"
-                          style="cursor: pointer"
-                        >
-                          <v-img
-                            v-if="char.reference_image"
-                            :src="char.reference_image"
-                            height="120"
-                            cover
-                          />
-                          <v-sheet v-else height="120" class="d-flex align-center justify-center bg-grey-lighten-2">
-                            <v-icon size="48" color="grey">mdi-account</v-icon>
-                          </v-sheet>
-                          <v-card-text class="text-center pa-2">
-                            {{ char.name }}
-                          </v-card-text>
-                        </v-card>
-                      </v-col>
-                    </v-row>
-
-                    <div v-if="characters.length === 0" class="text-center py-8">
-                      <v-icon size="48" color="grey">mdi-account-group</v-icon>
-                      <p class="text-grey mt-4">
-                        还没有角色，
-                        <router-link to="/characters">去创建角色</router-link>
-                      </p>
-                    </div>
-                  </v-card-text>
-                  <v-card-actions>
-                    <v-spacer />
-                    <v-btn
-                      color="primary"
-                      :disabled="selectedCharacters.length === 0"
-                      @click="currentStep = 2"
-                    >
-                      下一步
-                    </v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-stepper-window-item>
-
-              <!-- Step 2: 生成分镜脚本 -->
-              <v-stepper-window-item :value="2">
-                <v-card flat>
-                  <v-card-title>生成分镜脚本</v-card-title>
-                  <v-card-text>
-                    <v-textarea
-                      v-model="chapterPrompt"
-                      label="章节提示词"
-                      hint="描述本章的剧情，如：小明在公园遇到一只迷路的小狗"
-                      rows="3"
-                      :disabled="generatingScript"
-                    />
-
-                    <v-btn
-                      color="primary"
-                      class="mt-4"
-                      :loading="generatingScript"
-                      :disabled="!chapterPrompt.trim()"
-                      @click="generateScript"
-                    >
-                      生成分镜脚本
-                    </v-btn>
-
-                    <!-- 脚本预览 -->
-                    <div v-if="script" class="mt-6">
-                      <h3 class="mb-4">分镜脚本预览</h3>
+              <!-- 右侧内容区域 -->
+              <v-window v-model="currentStep" class="flex-grow-1">
+                <!-- Step 1: 选择角色 -->
+                <v-window-item :value="1">
+                  <v-card flat>
+                    <v-card-title>选择本章出场角色</v-card-title>
+                    <v-card-text>
                       <v-row>
                         <v-col
-                          v-for="panel in script.panels"
-                          :key="panel.number"
-                          cols="12"
-                          sm="6"
+                          v-for="char in characters"
+                          :key="char.id"
+                          cols="6"
+                          sm="4"
                           md="3"
                         >
-                          <v-card>
-                            <v-card-title class="text-subtitle-1">
-                              第 {{ panel.number }} 格
-                            </v-card-title>
-                            <v-card-text>
-                              <div class="text-caption text-grey mb-2">场景</div>
-                              <div class="text-body-2 mb-3">{{ panel.scene || '(未填写)' }}</div>
-
-                              <div class="text-caption text-grey mb-2">对白</div>
-                              <div class="text-body-2 mb-3">{{ panel.dialogue || '(无对白)' }}</div>
-
-                              <div class="text-caption text-grey mb-2">角色</div>
-                              <v-chip
-                                v-for="charId in panel.characters"
-                                :key="charId"
-                                size="x-small"
-                                class="mr-1"
-                              >
-                                {{ getCharacterName(charId) }}
-                              </v-chip>
+                          <v-card
+                            :color="selectedCharacters.includes(char.id) ? 'primary' : undefined"
+                            :variant="selectedCharacters.includes(char.id) ? 'outlined' : undefined"
+                            @click="toggleCharacter(char.id)"
+                            style="cursor: pointer"
+                          >
+                            <v-img
+                              v-if="char.reference_image"
+                              :src="char.reference_image"
+                              height="120"
+                              cover
+                            />
+                            <v-sheet v-else height="120" class="d-flex align-center justify-center bg-grey-lighten-2">
+                              <v-icon size="48" color="grey">mdi-account</v-icon>
+                            </v-sheet>
+                            <v-card-text class="text-center pa-2">
+                              {{ char.name }}
                             </v-card-text>
                           </v-card>
                         </v-col>
                       </v-row>
-                    </div>
-                  </v-card-text>
-                  <v-card-actions>
-                    <v-btn @click="currentStep = 1">
-                      上一步
-                    </v-btn>
-                    <v-spacer />
-                    <v-btn
-                      color="primary"
-                      :disabled="!script"
-                      @click="currentStep = 3"
-                    >
-                      下一步
-                    </v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-stepper-window-item>
 
-              <!-- Step 3: 生成漫画图片 -->
-              <v-stepper-window-item :value="3">
-                <v-card flat>
-                  <v-card-title>生成漫画图片</v-card-title>
-                  <v-card-text>
-                    <div class="mb-4">
-                      <div class="text-body-1">分镜布局：{{ chapter.layout_type }} 格</div>
-                      <div class="text-body-1">风格：{{ chapter.comic?.style_prompt || '默认日系黑白漫画' }}</div>
-                    </div>
+                      <div v-if="characters.length === 0" class="text-center py-8">
+                        <v-icon size="48" color="grey">mdi-account-group</v-icon>
+                        <p class="text-grey mt-4">
+                          还没有角色，
+                          <router-link to="/characters">去创建角色</router-link>
+                        </p>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-window-item>
 
-                    <v-btn
-                      color="primary"
-                      :loading="generatingImage"
-                      :disabled="generatingImage"
-                      @click="generateImage"
-                    >
-                      生成漫画图片
-                    </v-btn>
-
-                    <!-- 图片预览 -->
-                    <div v-if="chapter.page_image" class="mt-6">
-                      <h3 class="mb-4">生成的漫画图片</h3>
-                      <v-img
-                        :src="`/images/comics/${chapter.page_image}`"
-                        max-width="600"
-                        class="mx-auto"
+                <!-- Step 2: 生成分镜脚本 -->
+                <v-window-item :value="2">
+                  <v-card flat>
+                    <v-card-title>生成分镜脚本</v-card-title>
+                    <v-card-text>
+                      <v-textarea
+                        v-model="chapterPrompt"
+                        label="章节提示词"
+                        hint="描述本章的剧情，如：小明在公园遇到一只迷路的小狗"
+                        rows="3"
+                        :disabled="generatingScript"
                       />
-                    </div>
-                  </v-card-text>
-                  <v-card-actions>
-                    <v-btn @click="currentStep = 2">
-                      上一步
-                    </v-btn>
-                    <v-spacer />
-                    <v-btn
-                      v-if="chapter.page_image"
-                      color="success"
-                      :to="`/comics/${chapter.comic_id}`"
-                    >
-                      完成
-                    </v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-stepper-window-item>
-            </v-stepper-window>
-          </v-stepper>
+
+                      <v-btn
+                        color="primary"
+                        class="mt-4"
+                        :loading="generatingScript"
+                        :disabled="!chapterPrompt.trim()"
+                        @click="generateScript"
+                      >
+                        生成分镜脚本
+                      </v-btn>
+
+                      <!-- 脚本预览 -->
+                      <div v-if="script" class="mt-6">
+                        <h3 class="mb-4">分镜脚本预览</h3>
+                        <v-row>
+                          <v-col
+                            v-for="panel in script.panels"
+                            :key="panel.number"
+                            cols="12"
+                            sm="6"
+                            md="3"
+                          >
+                            <v-card>
+                              <v-card-title class="text-subtitle-1">
+                                第 {{ panel.number }} 格
+                              </v-card-title>
+                              <v-card-text>
+                                <div class="text-caption text-grey mb-2">场景</div>
+                                <div class="text-body-2 mb-3">{{ panel.scene || '(未填写)' }}</div>
+
+                                <div class="text-caption text-grey mb-2">对白</div>
+                                <div class="text-body-2 mb-3">{{ panel.dialogue || '(无对白)' }}</div>
+
+                                <div class="text-caption text-grey mb-2">角色</div>
+                                <v-chip
+                                  v-for="charId in panel.characters"
+                                  :key="charId"
+                                  size="x-small"
+                                  class="mr-1"
+                                >
+                                  {{ getCharacterName(charId) }}
+                                </v-chip>
+                              </v-card-text>
+                            </v-card>
+                          </v-col>
+                        </v-row>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-window-item>
+
+                <!-- Step 3: 生成漫画图片 -->
+                <v-window-item :value="3">
+                  <v-card flat>
+                    <v-card-title>生成漫画图片</v-card-title>
+                    <v-card-text>
+                      <div class="mb-4">
+                        <div class="text-body-1">分镜布局：{{ chapter.layout_type }} 格</div>
+                        <div class="text-body-1">风格：{{ chapter.comic?.style_prompt || '默认日系黑白漫画' }}</div>
+                      </div>
+
+                      <v-btn
+                        color="primary"
+                        :loading="generatingImage"
+                        :disabled="generatingImage"
+                        @click="generateImage"
+                      >
+                        生成漫画图片
+                      </v-btn>
+
+                      <!-- 图片预览 -->
+                      <div v-if="chapter.page_image" class="mt-6">
+                        <h3 class="mb-4">生成的漫画图片</h3>
+                        <v-img
+                          :src="`/images/comics/${chapter.page_image}`"
+                          max-width="600"
+                          class="mx-auto"
+                        />
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-window-item>
+              </v-window>
+            </v-layout>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- 底部操作按钮 -->
+      <v-row class="mt-4">
+        <v-col cols="12" class="d-flex justify-end ga-2">
+          <v-btn
+            v-if="currentStep > 1"
+            variant="outlined"
+            @click="currentStep--"
+          >
+            上一步
+          </v-btn>
+          <v-btn
+            v-if="currentStep < 3"
+            color="primary"
+            :disabled="currentStep === 1 && selectedCharacters.length === 0"
+            @click="currentStep++"
+          >
+            下一步
+          </v-btn>
+          <v-btn
+            v-if="currentStep === 3 && chapter.page_image"
+            color="success"
+            :to="`/comics/${chapter.comic_id}`"
+          >
+            完成
+          </v-btn>
         </v-col>
       </v-row>
     </template>

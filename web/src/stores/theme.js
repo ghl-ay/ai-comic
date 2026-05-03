@@ -21,11 +21,8 @@ export const useThemeStore = defineStore('theme', () => {
 
   // 应用主题到 Vuetify
   function applyTheme(vuetifyTheme) {
-    // 使用 Vuetify 3.5+ 的新 API
-    if (typeof vuetifyTheme.change === 'function') {
-      vuetifyTheme.change(currentTheme.value)
-    } else {
-      // 兼容旧版本
+    // Vuetify 3.5+ 使用 global.name.value 设置主题
+    if (vuetifyTheme.global?.name) {
       vuetifyTheme.global.name.value = currentTheme.value
     }
   }
