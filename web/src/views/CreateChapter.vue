@@ -26,15 +26,30 @@
         <v-col cols="12">
           <v-stepper v-model="currentStep" alt-labels>
             <v-stepper-header>
-              <v-stepper-item :value="1" :complete="currentStep > 1">
+              <v-stepper-item
+                :value="1"
+                :complete="currentStep > 1"
+                @click="currentStep = 1"
+                style="cursor: pointer"
+              >
                 选择角色
               </v-stepper-item>
               <v-divider />
-              <v-stepper-item :value="2" :complete="currentStep > 2">
+              <v-stepper-item
+                :value="2"
+                :complete="currentStep > 2"
+                @click="currentStep = 2"
+                style="cursor: pointer"
+              >
                 生成分镜脚本
               </v-stepper-item>
               <v-divider />
-              <v-stepper-item :value="3" :complete="currentStep > 3">
+              <v-stepper-item
+                :value="3"
+                :complete="currentStep > 3"
+                @click="currentStep = 3"
+                style="cursor: pointer"
+              >
                 生成漫画图片
               </v-stepper-item>
             </v-stepper-header>
