@@ -72,7 +72,7 @@
                             v-if="char.reference_image"
                             :src="char.reference_image"
                             height="120"
-                            cover
+                            contain
                           />
                           <v-sheet v-else height="120" class="d-flex align-center justify-center bg-grey-lighten-2">
                             <v-icon size="48" color="grey">mdi-account</v-icon>
