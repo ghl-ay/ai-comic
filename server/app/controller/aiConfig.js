@@ -4,7 +4,7 @@ const Controller = require('egg').Controller;
 class AiConfigController extends Controller {
   async index() {
     const { ctx } = this;
-    const configs = await ctx.service.aiConfig.getAiConfigs(ctx.state.user.id);
+    const configs = await ctx.service.aiConfig.getAiConfigs();
     ctx.body = { configs };
   }
 
@@ -20,7 +20,6 @@ class AiConfigController extends Controller {
 
     try {
       const configs = await ctx.service.aiConfig.saveAiConfig(
-        ctx.state.user.id,
         'text',
         { provider, apiKey, baseUrl, model }
       );
@@ -43,7 +42,6 @@ class AiConfigController extends Controller {
 
     try {
       const configs = await ctx.service.aiConfig.saveAiConfig(
-        ctx.state.user.id,
         'image',
         { provider, apiKey, baseUrl, model }
       );

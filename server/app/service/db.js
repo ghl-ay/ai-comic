@@ -135,7 +135,39 @@ class DbService extends Service {
     return result.changes > 0;
   }
 
-  // AI 配置相关
+  // AI 配置相关（全局配置，user_id 为 null）
+  findGlobalAiConfigs() {
+    const stmt = this.db.prepare(
+      'SELECT id, type, provider, base_url, model, created_at, updated_at FROM ai_configs WHERE user_id IS NULL'
+    );
+    return stmt.all();
+  }
+
+  findGlobalAiConfigByType(type) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM ai_configs WHERE user_id IS NULL AND type = ?'
+    );
+    return stmt.get(type);
+  }
+
+  upsertGlobalAiConfig(type, provider, apiKey, baseUrl, model) {
+    const existing = this.findGlobalAiConfigByType(type);
+    if (existing) {
+      const stmt = this.db.prepare(
+        'UPDATE ai_configs SET provider = ?, api_key = ?, base_url = ?, model = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+      );
+      stmt.run(provider, apiKey, baseUrl, model, existing.id);
+      return existing.id;
+    } else {
+      const stmt = this.db.prepare(
+        'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model) VALUES (NULL, ?, ?, ?, ?, ?)'
+      );
+      const result = stmt.run(type, provider, apiKey, baseUrl, model);
+      return result.lastInsertRowid;
+    }
+  }
+
+  // 旧方法保留用于兼容
   createAiConfig(userId, type, provider, apiKey, baseUrl, model) {
     const stmt = this.db.prepare(
       'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model) VALUES (?, ?, ?, ?, ?, ?)'

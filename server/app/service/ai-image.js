@@ -261,9 +261,9 @@ Requirements:
     return urls;
   }
 
-  async getClient(userId) {
-    // 从数据库获取用户配置
-    const config = await this.ctx.service.aiConfig.getAiConfigWithKey(userId, 'image');
+  async getClient() {
+    // 从数据库获取全局配置
+    const config = await this.ctx.service.aiConfig.getAiConfigWithKey('image');
 
     if (!config || !config.apiKey) {
       // 回退到环境变量
@@ -302,7 +302,7 @@ Requirements:
   }
 
   async generateCharacterReference(appearance) {
-    const aiConfig = await this.getClient(this.ctx.state.user.id);
+    const aiConfig = await this.getClient();
 
     if (!aiConfig) {
       this.ctx.throw(500, 'AI 图片服务未配置');
@@ -369,7 +369,7 @@ Requirements:
   async generateComicPage(params) {
     const { stylePrompt, layoutType, script, characterReferences, previousChapterImage } = params;
 
-    const aiConfig = await this.getClient(this.ctx.state.user.id);
+    const aiConfig = await this.getClient();
     if (!aiConfig) {
       this.ctx.throw(500, 'AI 图片服务未配置');
     }

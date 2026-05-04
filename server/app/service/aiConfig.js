@@ -2,9 +2,8 @@
 const Service = require('egg').Service;
 
 class AiConfigService extends Service {
-  async getAiConfigs(userId) {
-    const configs = await this.ctx.service.db.findAiConfigsByUserId(userId);
-    // 不返回 api_key
+  async getAiConfigs() {
+    const configs = await this.ctx.service.db.findGlobalAiConfigs();
     return configs.map(c => ({
       id: c.id,
       type: c.type,
@@ -16,11 +15,10 @@ class AiConfigService extends Service {
     }));
   }
 
-  async saveAiConfig(userId, type, data) {
+  async saveAiConfig(type, data) {
     const { provider, apiKey, baseUrl, model } = data;
 
-    await this.ctx.service.db.upsertAiConfig(
-      userId,
+    await this.ctx.service.db.upsertGlobalAiConfig(
       type,
       provider,
       apiKey,
@@ -28,11 +26,11 @@ class AiConfigService extends Service {
       model
     );
 
-    return await this.getAiConfigs(userId);
+    return await this.getAiConfigs();
   }
 
-  async getAiConfigWithKey(userId, type) {
-    const config = await this.ctx.service.db.findAiConfigByUserIdAndType(userId, type);
+  async getAiConfigWithKey(type) {
+    const config = await this.ctx.service.db.findGlobalAiConfigByType(type);
     if (!config) {
       return null;
     }

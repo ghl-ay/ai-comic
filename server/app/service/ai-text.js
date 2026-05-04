@@ -93,9 +93,9 @@ class AiTextService extends Service {
     }
   }
 
-  async getClient(userId) {
-    // 从数据库获取用户配置
-    const config = await this.ctx.service.aiConfig.getAiConfigWithKey(userId, 'text');
+  async getClient() {
+    // 从数据库获取全局配置
+    const config = await this.ctx.service.aiConfig.getAiConfigWithKey('text');
 
     if (!config || !config.apiKey) {
       // 回退到环境变量
@@ -130,7 +130,7 @@ class AiTextService extends Service {
   async generateScript(params) {
     const { chapterPrompt, layoutType, characters, previousChapterScript } = params;
 
-    const aiConfig = await this.getClient(this.ctx.state.user.id);
+    const aiConfig = await this.getClient();
     if (!aiConfig) {
       this.ctx.throw(500, 'AI 文本服务未配置');
     }

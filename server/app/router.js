@@ -33,10 +33,10 @@ module.exports = app => {
   router.post('/api/chapters/:id/generate-script', app.middleware.jwt(), controller.chapter.generateScript);
   router.post('/api/chapters/:id/generate-image', app.middleware.jwt(), controller.chapter.generateImage);
 
-  // AI 配置相关（需要登录）
+  // AI 配置相关（读取需要登录，修改需要管理员权限）
   router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);
-  router.put('/api/ai-config/text', app.middleware.jwt(), controller.aiConfig.updateText);
-  router.put('/api/ai-config/image', app.middleware.jwt(), controller.aiConfig.updateImage);
+  router.put('/api/ai-config/text', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateText);
+  router.put('/api/ai-config/image', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateImage);
 
   // 管理员接口（需要管理员权限）
   router.get('/api/admin/users', app.middleware.jwt(), app.middleware.admin(), controller.admin.getUsers);
