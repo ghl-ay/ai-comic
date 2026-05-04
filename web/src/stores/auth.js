@@ -10,6 +10,10 @@ export const useAuthStore = defineStore('auth', {
     error: null,
   }),
 
+  getters: {
+    isAdmin: (state) => state.user?.is_admin === true,
+  },
+
   actions: {
     async register(username, password) {
       this.loading = true
