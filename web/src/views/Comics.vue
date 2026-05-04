@@ -62,7 +62,7 @@
         md="4"
         lg="3"
       >
-        <v-card @click="goToComic(comic.id)" style="cursor: pointer">
+        <v-card class="card-fixed" @click="goToComic(comic.id)" style="cursor: pointer">
           <v-img
             v-if="comic.cover_image"
             :src="`/images/comics/${comic.cover_image}`"
@@ -73,12 +73,12 @@
             <v-icon size="64" color="grey">mdi-book-open-variant</v-icon>
           </v-sheet>
 
-          <v-card-title>{{ comic.title }}</v-card-title>
+          <v-card-title class="text-ellipsis-1">{{ comic.title }}</v-card-title>
           <v-card-text>
             <div class="text-caption text-grey">
               {{ comic.chapterCount || 0 }} 章节
             </div>
-            <div v-if="comic.style_prompt" class="text-caption text-grey mt-1">
+            <div v-if="comic.style_prompt" class="text-caption text-grey mt-1 text-ellipsis-3">
               风格：{{ comic.style_prompt }}
             </div>
           </v-card-text>
@@ -257,3 +257,29 @@ onMounted(() => {
   themeStore.watchSystemTheme(vuetifyTheme)
 })
 </script>
+
+<style scoped>
+.card-fixed {
+  height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-fixed .v-card-text {
+  flex: 1;
+  overflow: hidden;
+}
+
+.text-ellipsis-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-ellipsis-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
