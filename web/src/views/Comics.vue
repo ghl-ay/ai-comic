@@ -16,13 +16,14 @@
               角色库
             </v-btn>
             <v-btn
+              v-if="authStore.isAdmin"
               color="secondary"
               variant="text"
-              to="/settings/ai"
+              to="/admin"
               class="mr-2"
             >
-              <v-icon left>mdi-cog</v-icon>
-              AI 设置
+              <v-icon left>mdi-shield-account</v-icon>
+              后台管理
             </v-btn>
             <v-btn
               color="default"
