@@ -297,6 +297,14 @@ class DbService extends Service {
       fields.push('layout_type = ?');
       values.push(data.layout_type);
     }
+    if (data.chapter_prompt !== undefined) {
+      fields.push('chapter_prompt = ?');
+      values.push(data.chapter_prompt);
+    }
+    if (data.character_ids !== undefined) {
+      fields.push('character_ids = ?');
+      values.push(data.character_ids);
+    }
     if (data.script_content !== undefined) {
       fields.push('script_content = ?');
       values.push(data.script_content);
