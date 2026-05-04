@@ -30,7 +30,7 @@ class AuthService extends Service {
       { expiresIn: app.config.jwt.expiresIn }
     );
 
-    return { userId, username, token, isFirstUser };
+    return { userId, username, token, isFirstUser, is_admin: isFirstUser };
   }
 
   async login(username, password) {

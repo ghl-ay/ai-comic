@@ -27,13 +27,12 @@ class AuthController extends Controller {
 
     try {
       const result = await ctx.service.auth.register(username, password);
-      const user = await ctx.service.db.findUserById(result.userId);
       ctx.service.auth.setAuthCookie(result.token);
       ctx.body = {
         user: {
           id: result.userId,
           username: result.username,
-          is_admin: user.is_admin === 1,
+          is_admin: result.is_admin,
         },
       };
     } catch (err) {
