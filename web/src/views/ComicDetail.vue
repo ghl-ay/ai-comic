@@ -16,7 +16,30 @@
                 <v-icon left>mdi-arrow-left</v-icon>
                 返回
               </v-btn>
-              <h1>{{ comic.title }}</h1>
+              <h1
+                v-if="!editingTitle"
+                class="d-flex align-center"
+                style="cursor: pointer"
+                tabindex="0"
+                @click="startEditTitle"
+                @keyup.enter="startEditTitle"
+              >
+                {{ comic.title }}
+                <v-icon size="small" class="ml-2" color="grey">mdi-pencil</v-icon>
+              </h1>
+              <v-text-field
+                v-else
+                ref="titleInput"
+                v-model="editTitleValue"
+                variant="outlined"
+                density="compact"
+                hide-details
+                :loading="savingTitle"
+                @blur="saveTitle"
+                @keyup.enter="saveTitle"
+                @keyup.escape="cancelEditTitle"
+                style="max-width: 400px"
+              />
             </div>
             <div>
               <v-btn
@@ -61,8 +84,17 @@
               <v-icon size="64" color="grey">mdi-book-open-variant</v-icon>
             </v-sheet>
             <v-card-text>
-              <div v-if="comic.style_prompt">
-                <strong>风格：</strong> {{ comic.style_prompt }}
+              <div class="d-flex align-center">
+                <div v-if="comic.style_prompt">
+                  <strong>风格：</strong> {{ comic.style_prompt }}
+                </div>
+                <div v-else class="text-grey">
+                  未设置风格
+                </div>
+                <v-btn size="small" variant="text" class="ml-2" @click="openStyleDialog">
+                  <v-icon>mdi-pencil</v-icon>
+                  编辑
+                </v-btn>
               </div>
               <div class="text-caption text-grey mt-2">
                 创建于 {{ formatDate(comic.created_at) }}
@@ -165,6 +197,28 @@
         </v-card>
       </v-dialog>
 
+      <!-- 编辑风格对话框 -->
+      <v-dialog v-model="styleDialog" max-width="500">
+        <v-card>
+          <v-card-title>编辑风格提示词</v-card-title>
+          <v-card-text>
+            <v-textarea
+              v-model="editStyleValue"
+              label="风格提示词"
+              hint="如：日系黑白漫画、彩色卡通风格等"
+              rows="3"
+            />
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn @click="styleDialog = false">取消</v-btn>
+            <v-btn color="primary" @click="saveStyle" :loading="savingStyle">
+              保存
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <!-- 漫画预览 -->
       <ComicPreview
         v-model="showPreview"
@@ -184,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { jsPDF } from 'jspdf'
 import comicApi from '../api/comic'
@@ -204,6 +258,13 @@ const deleting = ref(false)
 const showPreview = ref(false)
 const showNoImageHint = ref(false)
 const exporting = ref(false)
+const editingTitle = ref(false)
+const editTitleValue = ref('')
+const savingTitle = ref(false)
+const titleInput = ref(null)
+const styleDialog = ref(false)
+const editStyleValue = ref('')
+const savingStyle = ref(false)
 
 const layoutOptions = [
   { title: '4 格分镜', value: 4 },
@@ -360,6 +421,64 @@ async function deleteChapter() {
     alert('删除章节失败：' + (e.response?.data?.error || e.message))
   } finally {
     deleting.value = false
+  }
+}
+
+function startEditTitle() {
+  editTitleValue.value = comic.value.title
+  editingTitle.value = true
+  nextTick(() => {
+    titleInput.value?.focus()
+  })
+}
+
+async function saveTitle() {
+  if (!editTitleValue.value.trim()) {
+    editTitleValue.value = comic.value.title
+    editingTitle.value = false
+    return
+  }
+
+  if (editTitleValue.value === comic.value.title) {
+    editingTitle.value = false
+    return
+  }
+
+  savingTitle.value = true
+  try {
+    await comicApi.updateComic(comic.value.id, { title: editTitleValue.value })
+    comic.value.title = editTitleValue.value
+    editingTitle.value = false
+  } catch (e) {
+    console.error('保存标题失败', e)
+    alert('保存失败：' + (e.response?.data?.error || e.message))
+    editTitleValue.value = comic.value.title
+  } finally {
+    savingTitle.value = false
+  }
+}
+
+function cancelEditTitle() {
+  editTitleValue.value = comic.value.title
+  editingTitle.value = false
+}
+
+function openStyleDialog() {
+  editStyleValue.value = comic.value.style_prompt || ''
+  styleDialog.value = true
+}
+
+async function saveStyle() {
+  savingStyle.value = true
+  try {
+    await comicApi.updateComic(comic.value.id, { stylePrompt: editStyleValue.value })
+    comic.value.style_prompt = editStyleValue.value
+    styleDialog.value = false
+  } catch (e) {
+    console.error('保存风格失败', e)
+    alert('保存失败：' + (e.response?.data?.error || e.message))
+  } finally {
+    savingStyle.value = false
   }
 }
 
