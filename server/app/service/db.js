@@ -25,7 +25,7 @@ class DbService extends Service {
 
   findUserById(id) {
     const stmt = this.db.prepare(
-      'SELECT id, username, created_at FROM users WHERE id = ?'
+      'SELECT id, username, is_admin, created_at FROM users WHERE id = ?'
     );
     return stmt.get(id);
   }

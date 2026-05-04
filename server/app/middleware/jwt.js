@@ -14,9 +14,14 @@ module.exports = (options, app) => {
 
     try {
       const decoded = jwt.verify(token, ctx.app.config.jwt.secret);
+
+      // 查询用户的 is_admin 字段
+      const user = await ctx.service.db.findUserById(decoded.id);
+
       ctx.state.user = {
         id: decoded.id,
         username: decoded.username,
+        is_admin: user ? user.is_admin === 1 : false,
       };
       await next();
     } catch (err) {
