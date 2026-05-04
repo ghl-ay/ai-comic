@@ -30,6 +30,27 @@ class DbService extends Service {
     return stmt.get(id);
   }
 
+  countUsers() {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM users');
+    const result = stmt.get();
+    return result.count;
+  }
+
+  updateUserAdmin(id, isAdmin) {
+    const stmt = this.db.prepare(
+      'UPDATE users SET is_admin = ? WHERE id = ?'
+    );
+    const result = stmt.run(isAdmin ? 1 : 0, id);
+    return result.changes > 0;
+  }
+
+  findAllUsers() {
+    const stmt = this.db.prepare(
+      'SELECT id, username, is_admin, created_at FROM users ORDER BY created_at DESC'
+    );
+    return stmt.all();
+  }
+
   // 角色相关
   createCharacter(userId, name, description, appearance) {
     const stmt = this.db.prepare(
