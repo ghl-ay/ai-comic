@@ -37,4 +37,8 @@ module.exports = app => {
   router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);
   router.put('/api/ai-config/text', app.middleware.jwt(), controller.aiConfig.updateText);
   router.put('/api/ai-config/image', app.middleware.jwt(), controller.aiConfig.updateImage);
+
+  // 管理员接口（需要管理员权限）
+  router.get('/api/admin/users', app.middleware.jwt(), app.middleware.admin(), controller.admin.getUsers);
+  router.put('/api/admin/users/:id/admin', app.middleware.jwt(), app.middleware.admin(), controller.admin.setUserAdmin);
 };
