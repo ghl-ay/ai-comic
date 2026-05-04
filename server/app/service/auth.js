@@ -55,7 +55,7 @@ class AuthService extends Service {
       { expiresIn: app.config.jwt.expiresIn }
     );
 
-    return { userId: user.id, username: user.username, token };
+    return { userId: user.id, username: user.username, is_admin: user.is_admin === 1, token };
   }
 
   setAuthCookie(token) {
