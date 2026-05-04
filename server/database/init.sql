@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS chapters (
   chapter_number INTEGER NOT NULL,
   title VARCHAR(200),
   layout_type INTEGER DEFAULT 4,
+  chapter_prompt TEXT,
+  character_ids TEXT,
   script_content TEXT,
   page_image VARCHAR(255),
   status VARCHAR(20) DEFAULT 'draft',
