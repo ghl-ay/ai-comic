@@ -11,13 +11,15 @@
       <!-- 面包屑导航 -->
       <v-row>
         <v-col cols="12">
-          <v-btn variant="text" :to="`/comics/${chapter.comic_id}`" class="mr-2">
-            <v-icon left>mdi-arrow-left</v-icon>
-            返回漫画
-          </v-btn>
-          <span class="text-h5">
-            {{ chapter.comic?.title }} > {{ chapter.title }}
-          </span>
+          <div class="d-flex align-center">
+            <v-btn variant="text" :to="`/comics/${chapter.comic_id}`" class="mr-2">
+              <v-icon left>mdi-arrow-left</v-icon>
+              返回
+            </v-btn>
+            <span class="text-h5">
+              {{ chapter.comic?.title }} > {{ chapter.title }}
+            </span>
+          </div>
         </v-col>
       </v-row>
 

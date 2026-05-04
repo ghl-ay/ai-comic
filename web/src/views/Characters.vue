@@ -4,7 +4,17 @@
     <v-row>
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center mb-4">
-          <h1>角色库</h1>
+          <div class="d-flex align-center">
+            <v-btn
+              variant="text"
+              @click="$router.back()"
+              class="mr-2"
+            >
+              <v-icon left>mdi-arrow-left</v-icon>
+              返回
+            </v-btn>
+            <h1>角色库</h1>
+          </div>
           <v-btn color="primary" @click="openCreateDialog">
             <v-icon left>mdi-plus</v-icon>
             创建角色

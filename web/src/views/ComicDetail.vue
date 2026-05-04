@@ -11,12 +11,12 @@
       <v-row>
         <v-col cols="12">
           <div class="d-flex justify-space-between align-center mb-4">
-            <div>
+            <div class="d-flex align-center">
               <v-btn variant="text" to="/comics" class="mr-2">
                 <v-icon left>mdi-arrow-left</v-icon>
                 返回
               </v-btn>
-              <h1 class="d-inline">{{ comic.title }}</h1>
+              <h1>{{ comic.title }}</h1>
             </div>
             <div>
               <v-btn

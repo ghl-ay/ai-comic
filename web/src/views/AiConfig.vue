@@ -3,7 +3,13 @@
   <v-container>
     <v-row>
       <v-col cols="12">
-        <h1 class="mb-4">AI 配置</h1>
+        <div class="d-flex align-center mb-4">
+          <v-btn to="/comics" variant="text" class="mr-2">
+            <v-icon left>mdi-arrow-left</v-icon>
+            返回
+          </v-btn>
+          <h1>AI 配置</h1>
+        </div>
       </v-col>
     </v-row>
 
@@ -87,14 +93,6 @@
       </v-col>
     </v-row>
 
-    <v-row class="mt-4">
-      <v-col>
-        <v-btn to="/comics" variant="text">
-          <v-icon left>mdi-arrow-left</v-icon>
-          返回漫画列表
-        </v-btn>
-      </v-col>
-    </v-row>
   </v-container>
 </template>
 
