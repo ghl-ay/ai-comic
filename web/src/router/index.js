@@ -34,9 +34,26 @@ const routes = [
     component: () => import('../views/Characters.vue'),
   },
   {
-    path: '/settings/ai',
-    name: 'AiConfig',
-    component: () => import('../views/AiConfig.vue'),
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('../views/Admin.vue'),
+    meta: { requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        redirect: '/admin/ai-config',
+      },
+      {
+        path: 'ai-config',
+        name: 'AdminAiConfig',
+        component: () => import('../views/admin/AiConfig.vue'),
+      },
+      {
+        path: 'users',
+        name: 'AdminUsers',
+        component: () => import('../views/admin/Users.vue'),
+      },
+    ],
   },
 ]
 
@@ -61,6 +78,11 @@ router.beforeEach(async (to, from, next) => {
 
   // 已登录用户不能访问登录页
   if (to.meta.public && authStore.user && to.path === '/login') {
+    return next('/comics')
+  }
+
+  // 管理员页面需要管理员权限
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return next('/comics')
   }
 
