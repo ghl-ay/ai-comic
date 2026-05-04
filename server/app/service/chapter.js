@@ -90,6 +90,12 @@ class ChapterService extends Service {
   async generateScript(chapterId, userId, prompt, characterIds) {
     const chapter = await this.getChapterWithComic(chapterId, userId);
 
+    // 存储用户输入的提示词和角色ID
+    await this.ctx.service.db.updateChapter(chapterId, {
+      chapter_prompt: prompt,
+      character_ids: JSON.stringify(characterIds),
+    });
+
     // 获取角色信息
     const characters = [];
     for (const charId of characterIds) {
