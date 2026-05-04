@@ -13,20 +13,15 @@ class AuthService extends Service {
       ctx.throw(400, '用户名已存在');
     }
 
-    // 检查是否是第一个用户
-    const userCount = await ctx.service.db.countUsers();
-    const isFirstUser = userCount === 0;
-
     // 密码加密
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 创建用户
-    const userId = await ctx.service.db.createUser(username, hashedPassword);
+    // 创建用户（数据库原子性地判断是否为第一个用户并设置管理员）
+    const userId = await ctx.service.db.createUserWithAdminCheck(username, hashedPassword);
 
-    // 如果是第一个用户，设置为管理员
-    if (isFirstUser) {
-      await ctx.service.db.updateUserAdmin(userId, true);
-    }
+    // 检查是否是第一个用户（用于返回信息）
+    const userCount = await ctx.service.db.countUsers();
+    const isFirstUser = userCount === 1;
 
     // 生成 token
     const token = jwt.sign(

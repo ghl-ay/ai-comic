@@ -16,6 +16,15 @@ class DbService extends Service {
     return result.lastInsertRowid;
   }
 
+  createUserWithAdminCheck(username, hashedPassword) {
+    const stmt = this.db.prepare(`
+      INSERT INTO users (username, password, is_admin)
+      VALUES (?, ?, (SELECT CASE WHEN COUNT(*) = 0 THEN 1 ELSE 0 END FROM users))
+    `);
+    const result = stmt.run(username, hashedPassword);
+    return result.lastInsertRowid;
+  }
+
   findUserByUsername(username) {
     const stmt = this.db.prepare(
       'SELECT * FROM users WHERE username = ?'
