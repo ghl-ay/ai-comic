@@ -81,7 +81,14 @@ class AuthController extends Controller {
       ctx.body = { error: '用户不存在' };
       return;
     }
-    ctx.body = { user };
+    ctx.body = {
+      user: {
+        id: user.id,
+        username: user.username,
+        is_admin: user.is_admin === 1,
+        created_at: user.created_at,
+      },
+    };
   }
 }
 
