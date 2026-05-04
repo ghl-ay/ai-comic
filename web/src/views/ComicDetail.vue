@@ -38,7 +38,7 @@
                 @blur="saveTitle"
                 @keyup.enter="saveTitle"
                 @keyup.escape="cancelEditTitle"
-                style="max-width: 400px"
+                style="min-width: 400px; max-width: 600px"
               />
             </div>
             <div>
