@@ -23,7 +23,7 @@
         md="4"
         lg="3"
       >
-        <v-card>
+        <v-card class="card-fixed">
           <v-img
             v-if="character.reference_image"
             :src="character.reference_image"
@@ -34,12 +34,12 @@
             <v-icon size="64" color="grey">mdi-account</v-icon>
           </v-sheet>
 
-          <v-card-title>{{ character.name }}</v-card-title>
+          <v-card-title class="text-ellipsis-1">{{ character.name }}</v-card-title>
           <v-card-text>
-            <div v-if="character.description" class="mb-2">
+            <div v-if="character.description" class="mb-2 text-ellipsis-3">
               {{ character.description }}
             </div>
-            <div v-if="character.appearance" class="text-caption text-grey">
+            <div v-if="character.appearance" class="text-caption text-grey text-ellipsis-3">
               外观：{{ character.appearance }}
             </div>
           </v-card-text>
@@ -259,3 +259,29 @@ onMounted(() => {
   loadCharacters()
 })
 </script>
+
+<style scoped>
+.card-fixed {
+  height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-fixed .v-card-text {
+  flex: 1;
+  overflow: hidden;
+}
+
+.text-ellipsis-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-ellipsis-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
