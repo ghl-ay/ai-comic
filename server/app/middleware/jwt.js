@@ -18,10 +18,16 @@ module.exports = (options, app) => {
       // 查询用户的 is_admin 字段
       const user = await ctx.service.db.findUserById(decoded.id);
 
+      if (!user) {
+        ctx.status = 401;
+        ctx.body = { error: '用户不存在' };
+        return;
+      }
+
       ctx.state.user = {
         id: decoded.id,
         username: decoded.username,
-        is_admin: user ? user.is_admin === 1 : false,
+        is_admin: user.is_admin === 1,
       };
       await next();
     } catch (err) {
