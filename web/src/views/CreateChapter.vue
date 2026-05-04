@@ -250,6 +250,16 @@ async function loadChapter() {
     const res = await chapterApi.getChapter(route.params.chapterId)
     chapter.value = res.chapter
 
+    // 如果已存储提示词，回显
+    if (chapter.value.chapter_prompt) {
+      chapterPrompt.value = chapter.value.chapter_prompt
+    }
+
+    // 如果已存储角色ID，回显
+    if (chapter.value.character_ids) {
+      selectedCharacters.value = JSON.parse(chapter.value.character_ids)
+    }
+
     // 如果已有脚本，解析它
     if (chapter.value.script_content) {
       script.value = JSON.parse(chapter.value.script_content)
