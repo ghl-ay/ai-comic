@@ -267,7 +267,8 @@ class DbService extends Service {
         ossRegion: data.ossRegion || '',
         ossPublicBaseUrl: data.ossPublicBaseUrl || '',
       };
-    } catch {
+    } catch (e) {
+      this.ctx.logger.warn('解析存储配置失败:', e);
       return null;
     }
   }
