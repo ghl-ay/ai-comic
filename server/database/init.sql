@@ -65,6 +65,17 @@ CREATE TABLE IF NOT EXISTS ai_configs (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 通用配置表
+CREATE TABLE IF NOT EXISTS configs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category VARCHAR(50) NOT NULL,
+  key VARCHAR(50) NOT NULL,
+  value TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(category, key)
+);
+
 -- 索引
 CREATE INDEX IF NOT EXISTS idx_characters_user ON characters(user_id);
 CREATE INDEX IF NOT EXISTS idx_comics_user ON comics(user_id);
