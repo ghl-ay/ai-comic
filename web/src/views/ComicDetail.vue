@@ -206,7 +206,8 @@
               v-model="editStyleValue"
               label="风格提示词"
               hint="如：日系黑白漫画、彩色卡通风格等"
-              rows="3"
+              rows="15"
+              auto-grow
             />
           </v-card-text>
           <v-card-actions>
