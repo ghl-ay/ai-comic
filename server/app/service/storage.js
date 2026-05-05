@@ -1,8 +1,8 @@
-// server/app/service/storage/index.js
+// server/app/service/storage.js
 const Service = require('egg').Service;
-const DirectProvider = require('./providers/direct');
-const TencentCosProvider = require('./providers/tencent-cos');
-const XyyCloudProvider = require('./providers/xyy-cloud');
+const DirectProvider = require('./storage/providers/direct');
+const TencentCosProvider = require('./storage/providers/tencent-cos');
+const XyyCloudProvider = require('./storage/providers/xyy-cloud');
 
 const PROVIDERS = {
   direct: DirectProvider,
