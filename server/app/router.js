@@ -45,4 +45,7 @@ module.exports = app => {
   // 管理员接口（需要管理员权限）
   router.get('/api/admin/users', app.middleware.jwt(), app.middleware.admin(), controller.admin.getUsers);
   router.put('/api/admin/users/:id/admin', app.middleware.jwt(), app.middleware.admin(), controller.admin.setUserAdmin);
+
+  // 图片访问（通过 token 认证，无需登录）
+  router.get('/api/images/:type/:filename', controller.images.show);
 };
