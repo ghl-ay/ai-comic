@@ -38,9 +38,9 @@ module.exports = app => {
   router.put('/api/ai-config/text', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateText);
   router.put('/api/ai-config/image', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateImage);
 
-  // 存储配置相关（需要管理员权限）
-  router.get('/api/storage-config', app.middleware.jwt(), app.middleware.admin(), controller.storageConfig.index);
-  router.put('/api/storage-config', app.middleware.jwt(), app.middleware.admin(), controller.storageConfig.update);
+  // 通用配置 API（需要管理员权限）
+  router.get('/api/configs/:category/:key', app.middleware.jwt(), app.middleware.admin(), controller.configs.show);
+  router.put('/api/configs/:category/:key', app.middleware.jwt(), app.middleware.admin(), controller.configs.update);
 
   // 管理员接口（需要管理员权限）
   router.get('/api/admin/users', app.middleware.jwt(), app.middleware.admin(), controller.admin.getUsers);
