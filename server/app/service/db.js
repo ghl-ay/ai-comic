@@ -467,6 +467,33 @@ class DbService extends Service {
     const result = stmt.get(comicId);
     return result.count;
   }
+
+  // 通用配置表相关方法
+  getConfig(category, key) {
+    const stmt = this.db.prepare(
+      'SELECT value FROM configs WHERE category = ? AND key = ?'
+    );
+    const row = stmt.get(category, key);
+    if (!row) return null;
+    try {
+      return JSON.parse(row.value);
+    } catch (e) {
+      this.ctx.logger.warn(`解析配置失败 [${category}/${key}]:`, e);
+      return null;
+    }
+  }
+
+  setConfig(category, key, value) {
+    const jsonValue = JSON.stringify(value);
+    const stmt = this.db.prepare(`
+      INSERT INTO configs (category, key, value, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(category, key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    stmt.run(category, key, jsonValue);
+  }
 }
 
 module.exports = DbService;
