@@ -48,4 +48,7 @@ module.exports = app => {
 
   // 图片访问（通过 token 认证，无需登录）
   router.get('/api/images/:type/:filename', controller.images.show);
+
+  // 图片访问（通过 Cookie 认证，需要登录）
+  router.get('/images/:type/:filename', app.middleware.jwt(), controller.images.showAuth);
 };

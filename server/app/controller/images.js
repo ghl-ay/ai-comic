@@ -39,6 +39,26 @@ class ImagesController extends Controller {
       return;
     }
 
+    await this.serveImage(type, filename);
+  }
+
+  async showAuth() {
+    const { ctx } = this;
+    const { type, filename } = ctx.params;
+
+    // 通过 Cookie 认证（JWT 中间件已验证）
+    if (!ctx.state.user) {
+      ctx.status = 401;
+      ctx.body = { error: '未登录' };
+      return;
+    }
+
+    await this.serveImage(type, filename);
+  }
+
+  async serveImage(type, filename) {
+    const { ctx } = this;
+
     // 验证 type 参数
     if (!['characters', 'comics'].includes(type)) {
       ctx.status = 400;
