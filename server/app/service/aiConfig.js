@@ -10,20 +10,22 @@ class AiConfigService extends Service {
       provider: c.provider,
       baseUrl: c.base_url,
       model: c.model,
+      apiFormat: c.api_format || 'openai',
       createdAt: c.created_at,
       updatedAt: c.updated_at,
     }));
   }
 
   async saveAiConfig(type, data) {
-    const { provider, apiKey, baseUrl, model } = data;
+    const { provider, apiKey, baseUrl, model, apiFormat } = data;
 
     await this.ctx.service.db.upsertGlobalAiConfig(
       type,
       provider,
       apiKey,
       baseUrl,
-      model
+      model,
+      apiFormat || 'openai'
     );
 
     return await this.getAiConfigs();
@@ -39,6 +41,7 @@ class AiConfigService extends Service {
       apiKey: config.api_key,
       baseUrl: config.base_url,
       model: config.model,
+      apiFormat: config.api_format || 'openai',
     };
   }
 }

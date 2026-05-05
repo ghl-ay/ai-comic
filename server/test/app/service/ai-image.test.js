@@ -1,6 +1,9 @@
 'use strict';
 
 const assert = require('assert');
+const BaseImageProvider = require('../../../app/providers/base');
+const OpenAIImageProvider = require('../../../app/providers/openai');
+const GrsaiImageProvider = require('../../../app/providers/grsai');
 const AiImageService = require('../../../app/service/ai-image');
 
 describe('test/app/service/ai-image.test.js', () => {
@@ -11,7 +14,7 @@ describe('test/app/service/ai-image.test.js', () => {
 
     it('waits up to 10 minutes for Grsai draw results by default', () => {
       assert.strictEqual(
-        AiImageService.DEFAULT_GRSAI_POLL_INTERVAL_MS * AiImageService.DEFAULT_GRSAI_MAX_POLL_ATTEMPTS,
+        GrsaiImageProvider.DEFAULT_POLL_INTERVAL_MS * GrsaiImageProvider.DEFAULT_MAX_POLL_ATTEMPTS,
         10 * 60 * 1000
       );
     });
@@ -19,7 +22,7 @@ describe('test/app/service/ai-image.test.js', () => {
 
   describe('buildComicPagePrompt()', () => {
     it('includes dialogue and character library details', () => {
-      const prompt = AiImageService.buildComicPagePrompt({
+      const prompt = BaseImageProvider.buildComicPagePrompt({
         stylePrompt: '彩色卡通风格',
         layoutType: 2,
         script: {
@@ -68,170 +71,27 @@ describe('test/app/service/ai-image.test.js', () => {
     });
   });
 
-  describe('buildComicPageRequest()', () => {
-    it('uses gpt-image-2 image edit requests with reference images', () => {
-      const request = AiImageService.buildComicPageRequest({
+  describe('OpenAI Provider', () => {
+    it('detects gpt-image models', () => {
+      const provider = new OpenAIImageProvider({
+        apiKey: 'test',
+        baseUrl: 'https://api.openai.com',
         model: 'gpt-image-2',
-        prompt: 'prompt',
-        imageInputs: [ 'ref-1', 'ref-2' ],
       });
 
-      assert.strictEqual(request.method, 'edit');
-      assert.deepStrictEqual(request.body, {
+      assert.strictEqual(provider.isGptImageModel('gpt-image-2'), true);
+      assert.strictEqual(provider.isGptImageModel('gpt-image-1'), true);
+      assert.strictEqual(provider.isGptImageModel('dall-e-3'), false);
+    });
+
+    it('extracts image response with base64', () => {
+      const provider = new OpenAIImageProvider({
+        apiKey: 'test',
+        baseUrl: 'https://api.openai.com',
         model: 'gpt-image-2',
-        prompt: 'prompt',
-        image: [ 'ref-1', 'ref-2' ],
-        n: 1,
-        size: '1024x1024',
-      });
-    });
-
-    it('uses image generation when no reference images exist', () => {
-      const request = AiImageService.buildComicPageRequest({
-        model: 'gpt-image-2',
-        prompt: 'prompt',
-        imageInputs: [],
       });
 
-      assert.strictEqual(request.method, 'generate');
-      assert.deepStrictEqual(request.body, {
-        model: 'gpt-image-2',
-        prompt: 'prompt',
-        n: 1,
-        size: '1024x1024',
-      });
-    });
-
-    it('keeps URL response format for non gpt-image models', () => {
-      const request = AiImageService.buildComicPageRequest({
-        model: 'dall-e-3',
-        prompt: 'prompt',
-        imageInputs: [],
-      });
-
-      assert.strictEqual(request.body.response_format, 'url');
-    });
-  });
-
-  describe('Grsai draw API compatibility', () => {
-    it('detects Grsai image configurations', () => {
-      assert.strictEqual(AiImageService.isGrsaiConfig({
-        provider: 'grsai',
-        baseUrl: 'https://grsai.dakka.com.cn/v1',
-      }), true);
-
-      assert.strictEqual(AiImageService.isGrsaiConfig({
-        provider: 'OpenAI',
-        baseUrl: 'https://api.openai.com/v1',
-      }), false);
-    });
-
-    it('builds Grsai draw API URLs from either host or v1 base URL', () => {
-      assert.strictEqual(
-        AiImageService.buildGrsaiApiUrl('https://grsai.dakka.com.cn', 'completions'),
-        'https://grsai.dakka.com.cn/v1/draw/completions'
-      );
-      assert.strictEqual(
-        AiImageService.buildGrsaiApiUrl('https://grsai.dakka.com.cn/v1', 'result'),
-        'https://grsai.dakka.com.cn/v1/draw/result'
-      );
-    });
-
-    it('submits reference urls to Grsai draw completions and polls the result', async () => {
-      const calls = [];
-      const fetchImpl = async (url, options) => {
-        calls.push({ url, body: JSON.parse(options.body) });
-
-        if (url.endsWith('/v1/draw/completions')) {
-          return {
-            ok: true,
-            json: async () => ({
-              code: 0,
-              data: { id: 'task-1' },
-            }),
-          };
-        }
-
-        return {
-          ok: true,
-          json: async () => ({
-            code: 0,
-            data: {
-              id: 'task-1',
-              progress: 100,
-              status: 'succeeded',
-              results: [
-                { url: 'https://example.com/generated.png' },
-              ],
-            },
-          }),
-        };
-      };
-
-      const response = await AiImageService.executeGrsaiDrawRequest({
-        apiKey: 'key',
-        baseUrl: 'https://grsai.dakka.com.cn/v1',
-        model: 'gpt-image-2',
-        prompt: 'prompt with character details',
-        referenceUrls: [
-          'https://comic.example.com/images/characters/a.png',
-        ],
-        fetchImpl,
-        pollIntervalMs: 0,
-      });
-
-      assert.deepStrictEqual(response, {
-        data: [
-          { url: 'https://example.com/generated.png' },
-        ],
-      });
-      assert.deepStrictEqual(calls, [
-        {
-          url: 'https://grsai.dakka.com.cn/v1/draw/completions',
-          body: {
-            model: 'gpt-image-2',
-            prompt: 'prompt with character details',
-            aspectRatio: '1:1',
-            urls: [
-              'https://comic.example.com/images/characters/a.png',
-            ],
-            webHook: '-1',
-            shutProgress: false,
-          },
-        },
-        {
-          url: 'https://grsai.dakka.com.cn/v1/draw/result',
-          body: {
-            id: 'task-1',
-          },
-        },
-      ]);
-    });
-
-    it('uploads local reference images before sending them to Grsai', async () => {
-      const uploads = [];
-      const urls = await AiImageService.uploadReferenceImages([
-        '/local/character.png',
-        '/local/previous.png',
-      ], async imagePath => {
-        uploads.push(imagePath);
-        return `https://cos.example.com/${imagePath.split('/').pop()}`;
-      });
-
-      assert.deepStrictEqual(uploads, [
-        '/local/character.png',
-        '/local/previous.png',
-      ]);
-      assert.deepStrictEqual(urls, [
-        'https://cos.example.com/character.png',
-        'https://cos.example.com/previous.png',
-      ]);
-    });
-  });
-
-  describe('extractImageBuffer()', () => {
-    it('decodes base64 image responses', () => {
-      const buffer = AiImageService.extractImageBuffer({
+      const result = provider.extractImageResponse({
         data: [
           {
             b64_json: Buffer.from('image-bytes').toString('base64'),
@@ -239,68 +99,128 @@ describe('test/app/service/ai-image.test.js', () => {
         ],
       });
 
-      assert.strictEqual(buffer.toString(), 'image-bytes');
+      assert.strictEqual(result.imageBuffer.toString(), 'image-bytes');
+    });
+
+    it('extracts image response with URL', () => {
+      const provider = new OpenAIImageProvider({
+        apiKey: 'test',
+        baseUrl: 'https://api.openai.com',
+        model: 'dall-e-3',
+      });
+
+      const result = provider.extractImageResponse({
+        data: [
+          {
+            url: 'https://example.com/image.png',
+          },
+        ],
+      });
+
+      assert.strictEqual(result.imageUrl, 'https://example.com/image.png');
     });
   });
 
-  describe('executeComicPageRequest()', () => {
-    it('falls back to image generation when reference-image edit endpoint is missing', async () => {
-      const calls = [];
-      const notFoundError = new Error('404 page not found');
-      notFoundError.status = 404;
-
-      const client = {
-        images: {
-          edit: async body => {
-            calls.push([ 'edit', body ]);
-            throw notFoundError;
-          },
-          generate: async body => {
-            calls.push([ 'generate', body ]);
-            return {
-              data: [
-                {
-                  b64_json: Buffer.from('generated').toString('base64'),
-                },
-              ],
-            };
-          },
-        },
-      };
-
-      const response = await AiImageService.executeComicPageRequest(client, {
-        method: 'edit',
-        body: {
-          model: 'gpt-image-2',
-          prompt: 'keep character appearance',
-          image: [ 'reference-stream' ],
-          n: 1,
-          size: '1024x1024',
-        },
+  describe('Grsai Provider', () => {
+    it('builds Grsai draw API URLs from either host or v1 base URL', () => {
+      const provider = new GrsaiImageProvider({
+        apiKey: 'test',
+        baseUrl: 'https://grsai.dakka.com.cn',
+        model: 'gpt-image-2',
       });
 
-      assert.strictEqual(response.data[0].b64_json, Buffer.from('generated').toString('base64'));
-      assert.deepStrictEqual(calls, [
-        [
-          'edit',
-          {
-            model: 'gpt-image-2',
-            prompt: 'keep character appearance',
-            image: [ 'reference-stream' ],
-            n: 1,
-            size: '1024x1024',
-          },
-        ],
-        [
-          'generate',
-          {
-            model: 'gpt-image-2',
-            prompt: 'keep character appearance',
-            n: 1,
-            size: '1024x1024',
-          },
-        ],
-      ]);
+      assert.strictEqual(
+        provider.buildGrsaiApiUrl('https://grsai.dakka.com.cn', 'completions'),
+        'https://grsai.dakka.com.cn/v1/draw/completions'
+      );
+      assert.strictEqual(
+        provider.buildGrsaiApiUrl('https://grsai.dakka.com.cn/v1', 'result'),
+        'https://grsai.dakka.com.cn/v1/draw/result'
+      );
+    });
+
+    it('converts Grsai result to image response', () => {
+      const provider = new GrsaiImageProvider({
+        apiKey: 'test',
+        baseUrl: 'https://grsai.dakka.com.cn',
+        model: 'gpt-image-2',
+      });
+
+      const result = provider.convertGrsaiResultToImageResponse({
+        url: 'https://example.com/generated.png',
+        status: 'succeeded',
+      });
+
+      assert.deepStrictEqual(result, {
+        imageUrl: 'https://example.com/generated.png',
+      });
+    });
+
+    it('extracts Grsai result payload correctly', () => {
+      const provider = new GrsaiImageProvider({
+        apiKey: 'test',
+        baseUrl: 'https://grsai.dakka.com.cn',
+        model: 'gpt-image-2',
+      });
+
+      // Nested data format
+      const nestedResult = provider.extractGrsaiResultPayload({
+        code: 0,
+        data: {
+          id: 'task-1',
+          status: 'succeeded',
+          url: 'https://example.com/image.png',
+        },
+      });
+      assert.strictEqual(nestedResult.status, 'succeeded');
+
+      // Flat data format
+      const flatResult = provider.extractGrsaiResultPayload({
+        code: 0,
+        status: 'succeeded',
+        url: 'https://example.com/image.png',
+      });
+      assert.strictEqual(flatResult.status, 'succeeded');
+    });
+  });
+
+  describe('Provider factory', () => {
+    it('creates OpenAI provider', () => {
+      const { createImageProvider } = require('../../../app/providers');
+      const provider = createImageProvider('openai', {
+        apiKey: 'test',
+        baseUrl: 'https://api.openai.com',
+        model: 'gpt-image-2',
+      });
+
+      assert(provider instanceof OpenAIImageProvider);
+    });
+
+    it('creates Grsai provider', () => {
+      const { createImageProvider } = require('../../../app/providers');
+      const provider = createImageProvider('grsai', {
+        apiKey: 'test',
+        baseUrl: 'https://grsai.dakka.com.cn',
+        model: 'gpt-image-2',
+      });
+
+      assert(provider instanceof GrsaiImageProvider);
+    });
+
+    it('throws for unsupported format', () => {
+      const { createImageProvider } = require('../../../app/providers');
+
+      assert.throws(
+        () => createImageProvider('unknown', {}),
+        /不支持的 API 格式: unknown/
+      );
+    });
+
+    it('returns supported formats', () => {
+      const { getSupportedFormats } = require('../../../app/providers');
+      const formats = getSupportedFormats();
+
+      assert.deepStrictEqual(formats, ['openai', 'grsai']);
     });
   });
 });

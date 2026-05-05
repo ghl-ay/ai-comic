@@ -138,7 +138,7 @@ class DbService extends Service {
   // AI 配置相关（全局配置，user_id 为 null）
   findGlobalAiConfigs() {
     const stmt = this.db.prepare(
-      'SELECT id, type, provider, base_url, model, created_at, updated_at FROM ai_configs WHERE user_id IS NULL'
+      'SELECT id, type, provider, base_url, model, api_format, created_at, updated_at FROM ai_configs WHERE user_id IS NULL'
     );
     return stmt.all();
   }
@@ -147,22 +147,30 @@ class DbService extends Service {
     const stmt = this.db.prepare(
       'SELECT * FROM ai_configs WHERE user_id IS NULL AND type = ?'
     );
-    return stmt.get(type);
+    const config = stmt.get(type);
+    if (!config) return null;
+    return {
+      provider: config.provider,
+      apiKey: config.api_key,
+      baseUrl: config.base_url,
+      model: config.model,
+      apiFormat: config.api_format || 'openai',
+    };
   }
 
-  upsertGlobalAiConfig(type, provider, apiKey, baseUrl, model) {
+  upsertGlobalAiConfig(type, provider, apiKey, baseUrl, model, apiFormat = 'openai') {
     const existing = this.findGlobalAiConfigByType(type);
     if (existing) {
       const stmt = this.db.prepare(
-        'UPDATE ai_configs SET provider = ?, api_key = ?, base_url = ?, model = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+        'UPDATE ai_configs SET provider = ?, api_key = ?, base_url = ?, model = ?, api_format = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
       );
-      stmt.run(provider, apiKey, baseUrl, model, existing.id);
+      stmt.run(provider, apiKey, baseUrl, model, apiFormat, existing.id);
       return existing.id;
     } else {
       const stmt = this.db.prepare(
-        'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model) VALUES (NULL, ?, ?, ?, ?, ?)'
+        'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model, api_format) VALUES (NULL, ?, ?, ?, ?, ?, ?)'
       );
-      const result = stmt.run(type, provider, apiKey, baseUrl, model);
+      const result = stmt.run(type, provider, apiKey, baseUrl, model, apiFormat);
       return result.lastInsertRowid;
     }
   }

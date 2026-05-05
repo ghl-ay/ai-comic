@@ -10,7 +10,7 @@ class AiConfigController extends Controller {
 
   async updateText() {
     const { ctx } = this;
-    const { provider, apiKey, baseUrl, model } = ctx.request.body;
+    const { provider, apiKey, baseUrl, model, apiFormat } = ctx.request.body;
 
     if (!provider || !apiKey || !baseUrl || !model) {
       ctx.status = 400;
@@ -21,7 +21,7 @@ class AiConfigController extends Controller {
     try {
       const configs = await ctx.service.aiConfig.saveAiConfig(
         'text',
-        { provider, apiKey, baseUrl, model }
+        { provider, apiKey, baseUrl, model, apiFormat }
       );
       ctx.body = { configs };
     } catch (err) {
@@ -32,7 +32,7 @@ class AiConfigController extends Controller {
 
   async updateImage() {
     const { ctx } = this;
-    const { provider, apiKey, baseUrl, model } = ctx.request.body;
+    const { provider, apiKey, baseUrl, model, apiFormat } = ctx.request.body;
 
     if (!provider || !apiKey || !baseUrl || !model) {
       ctx.status = 400;
@@ -43,7 +43,7 @@ class AiConfigController extends Controller {
     try {
       const configs = await ctx.service.aiConfig.saveAiConfig(
         'image',
-        { provider, apiKey, baseUrl, model }
+        { provider, apiKey, baseUrl, model, apiFormat }
       );
       ctx.body = { configs };
     } catch (err) {
