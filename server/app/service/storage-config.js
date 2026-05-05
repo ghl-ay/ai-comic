@@ -3,17 +3,17 @@ const Service = require('egg').Service;
 
 class StorageConfigService extends Service {
   async getStorageConfig() {
-    let config = this.ctx.service.db.findStorageConfig();
+    let config = await this.ctx.service.db.findStorageConfig();
 
     // 如果数据库没有配置，从配置文件迁移
     if (!config) {
-      config = this.migrateFromConfigFile();
+      config = await this.migrateFromConfigFile();
     }
 
     return config;
   }
 
-  migrateFromConfigFile() {
+  async migrateFromConfigFile() {
     const cosConfig = this.app.config.tencentCos || {};
 
     const config = {
@@ -26,7 +26,7 @@ class StorageConfigService extends Service {
     };
 
     // 写入数据库
-    this.ctx.service.db.upsertStorageConfig(config);
+    await this.ctx.service.db.upsertStorageConfig(config);
 
     return config;
   }
