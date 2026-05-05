@@ -150,6 +150,7 @@ class DbService extends Service {
     const config = stmt.get(type);
     if (!config) return null;
     return {
+      id: config.id,
       provider: config.provider,
       apiKey: config.api_key,
       baseUrl: config.base_url,
