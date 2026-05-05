@@ -53,7 +53,7 @@ VALUES (NULL, 'image_storage', '', '{"accessMode":"direct","ossSecretId":"","oss
 
 | 方法 | 路径 | 描述 | 权限 |
 |------|------|------|------|
-| GET | `/api/storage-config` | 获取图片存储配置 | 登录 |
+| GET | `/api/storage-config` | 获取图片存储配置 | 管理员 |
 | PUT | `/api/storage-config` | 更新图片存储配置 | 管理员 |
 | GET | `/api/images/:type/:filename` | 认证访问图片 | token 参数 |
 
