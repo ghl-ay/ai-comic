@@ -66,6 +66,7 @@ class XyyCloudProvider extends BaseProvider {
     const filename = path.basename(this.generateFilename(buffer, originalName, 'images'));
     const form = new FormData();
     form.append('file', buffer, filename);
+    form.append('mtime', Date.now().toString());
 
     const uploadUrl = `${this.apiBaseUrl}/api/diskFile/${this.uid}/file/images`;
 
