@@ -494,6 +494,77 @@ class DbService extends Service {
     `);
     stmt.run(category, key, jsonValue);
   }
+
+  // 数据迁移：从 ai_configs 迁移到 configs
+  migrateToConfigs() {
+    // 检查是否已迁移（使用迁移标记）
+    const migrated = this.getConfig('_migration', 'configs');
+    if (migrated?.completed) {
+      this.ctx.logger.info('配置已迁移，跳过');
+      return;
+    }
+
+    try {
+      // 迁移存储配置
+      const storageConfig = this.findStorageConfig();
+      if (storageConfig) {
+        // 迁移腾讯云 COS 配置
+        if (storageConfig.ossSecretId) {
+          this.setConfig('storage', 'tencent-cos', {
+            secretId: storageConfig.ossSecretId,
+            secretKey: storageConfig.ossSecretKey,
+            bucket: storageConfig.ossBucket,
+            region: storageConfig.ossRegion,
+            publicBaseUrl: storageConfig.ossPublicBaseUrl || '',
+          });
+        }
+
+        // 设置默认提供商
+        this.setConfig('storage', 'default', {
+          provider: storageConfig.accessMode === 'oss' ? 'tencent-cos' : 'direct',
+        });
+      } else {
+        // 没有旧配置时，设置默认值
+        this.setConfig('storage', 'default', { provider: 'direct' });
+      }
+
+      // 迁移 AI 配置
+      const textConfig = this.findGlobalAiConfigByType('text');
+      if (textConfig) {
+        this.setConfig('ai', textConfig.provider || 'openai', {
+          apiKey: textConfig.apiKey,
+          baseUrl: textConfig.baseUrl,
+          model: textConfig.model,
+          apiFormat: textConfig.apiFormat,
+        });
+      }
+
+      const imageConfig = this.findGlobalAiConfigByType('image');
+      if (imageConfig) {
+        this.setConfig('ai', imageConfig.provider || 'openai', {
+          apiKey: imageConfig.apiKey,
+          baseUrl: imageConfig.baseUrl,
+          model: imageConfig.model,
+          apiFormat: imageConfig.apiFormat,
+        });
+      }
+
+      // 设置 AI 默认提供商
+      if (textConfig || imageConfig) {
+        this.setConfig('ai', 'default', {
+          textProvider: textConfig?.provider || 'openai',
+          imageProvider: imageConfig?.provider || 'openai',
+        });
+      }
+
+      // 设置迁移标记
+      this.setConfig('_migration', 'configs', { completed: true });
+      this.ctx.logger.info('配置迁移完成');
+    } catch (err) {
+      this.ctx.logger.error('配置迁移失败:', err);
+      throw err;
+    }
+  }
 }
 
 module.exports = DbService;
