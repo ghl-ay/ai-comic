@@ -46,6 +46,12 @@
         <v-card-title>图片模型</v-card-title>
         <v-card-text>
           <v-form @submit.prevent="saveImageConfig">
+            <v-select
+              v-model="imageForm.apiFormat"
+              :items="apiFormatOptions"
+              label="API 格式"
+              hint="选择图片生成服务的 API 格式"
+            />
             <v-text-field
               v-model="imageForm.provider"
               label="供应商名称"
@@ -88,6 +94,11 @@ import aiConfigApi from '../../api/ai-config'
 const textSaving = ref(false)
 const imageSaving = ref(false)
 
+const apiFormatOptions = [
+  { title: 'OpenAI', value: 'openai' },
+  { title: 'GRS AI', value: 'grsai' },
+]
+
 const textForm = ref({
   provider: '',
   baseUrl: '',
@@ -100,6 +111,7 @@ const imageForm = ref({
   baseUrl: '',
   model: '',
   apiKey: '',
+  apiFormat: 'openai',
 })
 
 async function loadConfigs() {
@@ -118,6 +130,7 @@ async function loadConfigs() {
       imageForm.value.provider = imageConfig.provider || ''
       imageForm.value.baseUrl = imageConfig.baseUrl || ''
       imageForm.value.model = imageConfig.model || ''
+      imageForm.value.apiFormat = imageConfig.apiFormat || 'openai'
     }
   } catch (e) {
     console.error('加载配置失败', e)
