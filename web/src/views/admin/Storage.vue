@@ -1,52 +1,79 @@
 <!-- web/src/views/admin/Storage.vue -->
 <template>
   <v-row>
-    <v-col cols="12" md="6">
+    <v-col cols="12" md="8">
       <v-card>
         <v-card-title>图片存储配置</v-card-title>
         <v-card-text>
           <v-form @submit.prevent="saveConfig">
-            <v-radio-group
-              v-model="form.accessMode"
-              label="访问模式"
-              hint="选择图片存储和访问方式"
+            <v-select
+              v-model="defaultProvider"
+              :items="providerOptions"
+              label="存储提供商"
+              hint="选择默认的图片存储方式"
               persistent-hint
-            >
-              <v-radio label="直接访问（本地存储）" value="direct" />
-              <v-radio label="OSS 云存储" value="oss" />
-            </v-radio-group>
+              @update:modelValue="onProviderChange"
+            />
 
-            <template v-if="form.accessMode === 'oss'">
-              <v-divider class="my-4" />
-              <div class="text-subtitle-1 mb-2">OSS 配置</div>
+            <v-divider class="my-4" />
 
+            <!-- 腾讯云 COS 配置 -->
+            <template v-if="defaultProvider === 'tencent-cos'">
+              <div class="text-subtitle-1 mb-2">腾讯云 COS 配置</div>
               <v-text-field
-                v-model="form.ossSecretId"
+                v-model="tencentCos.secretId"
                 label="Secret ID"
                 type="password"
-                hint="云存储访问密钥 ID"
               />
               <v-text-field
-                v-model="form.ossSecretKey"
+                v-model="tencentCos.secretKey"
                 label="Secret Key"
                 type="password"
-                hint="云存储访问密钥"
               />
               <v-text-field
-                v-model="form.ossBucket"
+                v-model="tencentCos.bucket"
                 label="Bucket 名称"
-                hint="存储桶名称"
               />
               <v-text-field
-                v-model="form.ossRegion"
+                v-model="tencentCos.region"
                 label="Region"
-                hint="存储桶所在区域，如 ap-shanghai"
+                hint="如 ap-guangzhou"
               />
               <v-text-field
-                v-model="form.ossPublicBaseUrl"
+                v-model="tencentCos.publicBaseUrl"
                 label="公开访问地址（可选）"
-                hint="自定义 CDN 或公开访问域名"
               />
+            </template>
+
+            <!-- 咸鱼云配置 -->
+            <template v-if="defaultProvider === 'xyy-cloud'">
+              <div class="text-subtitle-1 mb-2">咸鱼云存储配置</div>
+              <v-text-field
+                v-model="xyyCloud.username"
+                label="用户名"
+              />
+              <v-text-field
+                v-model="xyyCloud.password"
+                label="密码"
+                type="password"
+              />
+              <v-text-field
+                v-model="xyyCloud.apiBaseUrl"
+                label="API 地址"
+                hint="默认: https://your-api-server.example.com"
+              />
+              <v-text-field
+                v-model="xyyCloud.publicBaseUrl"
+                label="访问域名"
+                hint="默认: https://your-image-server.example.com"
+              />
+            </template>
+
+            <!-- Direct 模式提示 -->
+            <template v-if="defaultProvider === 'direct'">
+              <v-alert type="info" variant="tonal">
+                本地存储模式：图片保存在服务器本地，通过带 token 的 URL 访问。
+              </v-alert>
             </template>
 
             <v-btn
@@ -66,39 +93,78 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import storageConfigApi from '../../api/storage-config'
+import configsApi from '../../api/configs'
 
 const saving = ref(false)
+const defaultProvider = ref('direct')
 
-const form = ref({
-  accessMode: 'direct',
-  ossSecretId: '',
-  ossSecretKey: '',
-  ossBucket: '',
-  ossRegion: '',
-  ossPublicBaseUrl: '',
+const providerOptions = [
+  { title: '本地存储', value: 'direct' },
+  { title: '腾讯云 COS', value: 'tencent-cos' },
+  { title: '咸鱼云存储', value: 'xyy-cloud' },
+]
+
+const tencentCos = ref({
+  secretId: '',
+  secretKey: '',
+  bucket: '',
+  region: '',
+  publicBaseUrl: '',
+})
+
+const xyyCloud = ref({
+  username: '',
+  password: '',
+  apiBaseUrl: 'https://your-api-server.example.com',
+  publicBaseUrl: 'https://your-image-server.example.com',
 })
 
 async function loadConfig() {
   try {
-    const res = await storageConfigApi.getConfig()
-    if (res.config) {
-      form.value.accessMode = res.config.accessMode || 'direct'
-      form.value.ossSecretId = res.config.ossSecretId || ''
-      form.value.ossSecretKey = res.config.ossSecretKey || ''
-      form.value.ossBucket = res.config.ossBucket || ''
-      form.value.ossRegion = res.config.ossRegion || ''
-      form.value.ossPublicBaseUrl = res.config.ossPublicBaseUrl || ''
+    // 加载默认提供商
+    const defaultRes = await configsApi.get('storage', 'default')
+    if (defaultRes.config) {
+      defaultProvider.value = defaultRes.config.provider || 'direct'
     }
+
+    // 加载对应提供商的配置
+    await loadProviderConfig(defaultProvider.value)
   } catch (e) {
     console.error('加载配置失败', e)
   }
 }
 
+async function loadProviderConfig(provider) {
+  if (provider === 'tencent-cos') {
+    const res = await configsApi.get('storage', 'tencent-cos')
+    if (res.config) {
+      tencentCos.value = { ...tencentCos.value, ...res.config }
+    }
+  } else if (provider === 'xyy-cloud') {
+    const res = await configsApi.get('storage', 'xyy-cloud')
+    if (res.config) {
+      xyyCloud.value = { ...xyyCloud.value, ...res.config }
+    }
+  }
+}
+
+async function onProviderChange(newProvider) {
+  await loadProviderConfig(newProvider)
+}
+
 async function saveConfig() {
   saving.value = true
   try {
-    await storageConfigApi.saveConfig(form.value)
+    // 保存默认提供商
+    await configsApi.set('storage', 'default', { provider: defaultProvider.value })
+
+    // 保存提供商配置
+    if (defaultProvider.value === 'tencent-cos') {
+      await configsApi.set('storage', 'tencent-cos', tencentCos.value)
+    } else if (defaultProvider.value === 'xyy-cloud') {
+      await configsApi.set('storage', 'xyy-cloud', xyyCloud.value)
+    }
+
     alert('存储配置已保存')
   } catch (e) {
     alert('保存失败：' + (e.response?.data?.error || e.message))
