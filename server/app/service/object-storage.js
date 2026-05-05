@@ -3,10 +3,16 @@ const Service = require('egg').Service;
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 class ObjectStorageService extends Service {
-  static isTencentCosConfigured(config) {
-    return Boolean(config.secretId && config.secretKey && config.bucket && config.region);
+  static isOssConfigured(config) {
+    return Boolean(
+      config.ossSecretId &&
+      config.ossSecretKey &&
+      config.ossBucket &&
+      config.ossRegion
+    );
   }
 
   static buildObjectKey(params) {
@@ -17,12 +23,12 @@ class ObjectStorageService extends Service {
   }
 
   static buildPublicUrl(params) {
-    const { key, publicBaseUrl, bucket, region } = params;
-    if (publicBaseUrl) {
-      return `${publicBaseUrl.replace(/\/+$/, '')}/${key.replace(/^\/+/, '')}`;
+    const { key, ossPublicBaseUrl, ossBucket, ossRegion } = params;
+    if (ossPublicBaseUrl) {
+      return `${ossPublicBaseUrl.replace(/\/+$/, '')}/${key.replace(/^\/+/, '')}`;
     }
 
-    return `https://${bucket}.cos.${region}.myqcloud.com/${key.replace(/^\/+/, '')}`;
+    return `https://${ossBucket}.cos.${ossRegion}.myqcloud.com/${key.replace(/^\/+/, '')}`;
   }
 
   static uploadBufferToTencentCos(params) {
@@ -35,8 +41,8 @@ class ObjectStorageService extends Service {
 
     return new Promise((resolve, reject) => {
       cosClient.putObject({
-        Bucket: config.bucket,
-        Region: config.region,
+        Bucket: config.ossBucket,
+        Region: config.ossRegion,
         Key: key,
         Body: buffer,
       }, err => {
@@ -47,16 +53,16 @@ class ObjectStorageService extends Service {
 
         resolve(ObjectStorageService.buildPublicUrl({
           key,
-          publicBaseUrl: config.publicBaseUrl,
-          bucket: config.bucket,
-          region: config.region,
+          ossPublicBaseUrl: config.ossPublicBaseUrl,
+          ossBucket: config.ossBucket,
+          ossRegion: config.ossRegion,
         }));
       });
     });
   }
 
-  getTencentCosConfig() {
-    return this.app.config.tencentCos || {};
+  async getStorageConfig() {
+    return await this.ctx.service.storageConfig.getStorageConfig();
   }
 
   createTencentCosClient(config) {
@@ -68,14 +74,31 @@ class ObjectStorageService extends Service {
     }
 
     return new COS({
-      SecretId: config.secretId,
-      SecretKey: config.secretKey,
+      SecretId: config.ossSecretId,
+      SecretKey: config.ossSecretKey,
     });
   }
 
+  generateDirectAccessUrl(filePath, type = 'characters') {
+    const filename = path.basename(filePath);
+    const token = jwt.sign(
+      { type: 'image_access', path: `${type}/${filename}` },
+      this.app.config.jwt.secret,
+      { expiresIn: '5m' }
+    );
+    return `/api/images/${type}/${filename}?token=${token}`;
+  }
+
   async uploadReferenceImage(filePath) {
-    const config = this.getTencentCosConfig();
-    if (!ObjectStorageService.isTencentCosConfigured(config)) {
+    const config = await this.getStorageConfig();
+
+    // 如果是直链模式，返回直接访问 URL
+    if (config.accessMode === 'direct') {
+      return this.generateDirectAccessUrl(filePath, 'characters');
+    }
+
+    // OSS 模式：上传到腾讯云 COS
+    if (!ObjectStorageService.isOssConfigured(config)) {
       this.ctx.throw(500, '腾讯云 COS 未配置，无法上传角色参考图');
     }
 
