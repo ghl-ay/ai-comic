@@ -56,14 +56,14 @@ class ImagesController extends Controller {
     // 安全检查：防止路径穿越
     const resolvedPath = path.resolve(filePath);
     const resolvedBase = path.resolve(baseDir);
-    if (!resolvedPath.startsWith(resolvedBase)) {
+    if (!resolvedPath.startsWith(resolvedBase + path.sep)) {
       ctx.status = 403;
       ctx.body = { error: '禁止访问' };
       return;
     }
 
     // 检查文件是否存在
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(resolvedPath)) {
       ctx.status = 404;
       ctx.body = { error: '图片不存在' };
       return;
@@ -71,7 +71,7 @@ class ImagesController extends Controller {
 
     // 返回图片
     ctx.set('Content-Type', 'image/png');
-    ctx.body = fs.createReadStream(filePath);
+    ctx.body = fs.createReadStream(resolvedPath);
   }
 }
 
