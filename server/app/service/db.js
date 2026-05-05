@@ -248,6 +248,56 @@ class DbService extends Service {
     }
   }
 
+  // 图片存储配置相关
+  findStorageConfig() {
+    const stmt = this.db.prepare(
+      'SELECT * FROM ai_configs WHERE user_id IS NULL AND type = ?'
+    );
+    const config = stmt.get('image_storage');
+    if (!config) return null;
+
+    try {
+      const data = JSON.parse(config.api_key);
+      return {
+        id: config.id,
+        accessMode: data.accessMode || 'direct',
+        ossSecretId: data.ossSecretId || '',
+        ossSecretKey: data.ossSecretKey || '',
+        ossBucket: data.ossBucket || '',
+        ossRegion: data.ossRegion || '',
+        ossPublicBaseUrl: data.ossPublicBaseUrl || '',
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  upsertStorageConfig(data) {
+    const jsonData = JSON.stringify({
+      accessMode: data.accessMode || 'direct',
+      ossSecretId: data.ossSecretId || '',
+      ossSecretKey: data.ossSecretKey || '',
+      ossBucket: data.ossBucket || '',
+      ossRegion: data.ossRegion || '',
+      ossPublicBaseUrl: data.ossPublicBaseUrl || '',
+    });
+
+    const existing = this.findStorageConfig();
+    if (existing) {
+      const stmt = this.db.prepare(
+        'UPDATE ai_configs SET api_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+      );
+      stmt.run(jsonData, existing.id);
+      return existing.id;
+    } else {
+      const stmt = this.db.prepare(
+        'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model, api_format) VALUES (NULL, ?, ?, ?, ?, ?, ?)'
+      );
+      const result = stmt.run('image_storage', '', jsonData, '', '', '');
+      return result.lastInsertRowid;
+    }
+  }
+
   // 漫画相关
   createComic(userId, title, stylePrompt) {
     const stmt = this.db.prepare(
