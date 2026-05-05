@@ -43,7 +43,7 @@ class StorageConfigService extends Service {
   }
 
   async updateStorageConfig(data) {
-    this.ctx.service.db.upsertStorageConfig(data);
+    await this.ctx.service.db.upsertStorageConfig(data);
     return await this.getStorageConfig();
   }
 }
