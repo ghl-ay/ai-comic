@@ -5,18 +5,32 @@ class AiConfigService extends Service {
   async getAiConfigs() {
     const db = this.ctx.service.db;
     const defaultConfig = db.getConfig('ai', 'default') || {};
-    const providers = ['openai', 'anthropic', 'deepseek', 'siliconflow', 'doubao'];
-
     const configs = [];
-    for (const provider of providers) {
-      const config = db.getConfig('ai', provider);
-      if (config) {
+
+    // 动态读取文本模型配置
+    if (defaultConfig.textProvider) {
+      const textConfig = db.getConfig('ai', defaultConfig.textProvider);
+      if (textConfig) {
         configs.push({
-          type: provider === defaultConfig.textProvider ? 'text' : provider === defaultConfig.imageProvider ? 'image' : provider,
-          provider,
-          baseUrl: config.baseUrl,
-          model: config.model,
-          apiFormat: config.apiFormat || 'openai',
+          type: 'text',
+          provider: defaultConfig.textProvider,
+          baseUrl: textConfig.baseUrl,
+          model: textConfig.model,
+          apiFormat: textConfig.apiFormat || 'openai',
+        });
+      }
+    }
+
+    // 动态读取图片模型配置
+    if (defaultConfig.imageProvider) {
+      const imageConfig = db.getConfig('ai', defaultConfig.imageProvider);
+      if (imageConfig) {
+        configs.push({
+          type: 'image',
+          provider: defaultConfig.imageProvider,
+          baseUrl: imageConfig.baseUrl,
+          model: imageConfig.model,
+          apiFormat: imageConfig.apiFormat || 'openai',
         });
       }
     }
