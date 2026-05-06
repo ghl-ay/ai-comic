@@ -1,5 +1,5 @@
 // server/config/config.default.js
-exports.keys = 'CHANGE-ME-IN-PRODUCTION';
+exports.keys = process.env.EGG_KEYS || 'CHANGE-ME-IN-PRODUCTION';
 
 exports.security = {
   csrf: {
@@ -8,7 +8,7 @@ exports.security = {
 };
 
 exports.jwt = {
-  secret: 'CHANGE-ME-IN-PRODUCTION',
+  secret: process.env.JWT_SECRET || 'CHANGE-ME-IN-PRODUCTION',
   expiresIn: '7d',
 };
 
