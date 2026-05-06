@@ -60,12 +60,12 @@
               <v-text-field
                 v-model="xyyCloud.apiBaseUrl"
                 label="API 地址"
-                hint="默认: https://your-api-server.example.com"
+                hint="请输入咸鱼云 API 地址"
               />
               <v-text-field
                 v-model="xyyCloud.publicBaseUrl"
                 label="访问域名"
-                hint="默认: https://your-image-server.example.com"
+                hint="请输入图片访问域名"
               />
             </template>
 
@@ -115,8 +115,8 @@ const tencentCos = ref({
 const xyyCloud = ref({
   username: '',
   password: '',
-  apiBaseUrl: 'https://your-api-server.example.com',
-  publicBaseUrl: 'https://your-image-server.example.com',
+  apiBaseUrl: '',
+  publicBaseUrl: '',
 })
 
 async function loadConfig() {

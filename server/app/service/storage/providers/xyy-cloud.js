@@ -3,9 +3,6 @@ const path = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
 
-const DEFAULT_API_BASE_URL = 'https://your-api-server.example.com';
-const DEFAULT_PUBLIC_BASE_URL = 'https://your-image-server.example.com';
-
 class XyyCloudProvider extends BaseProvider {
   constructor(ctx, config) {
     super(ctx, config);
@@ -15,15 +12,20 @@ class XyyCloudProvider extends BaseProvider {
   }
 
   isConfigured() {
-    return Boolean(this.config.username && this.config.password);
+    return Boolean(
+      this.config.username &&
+      this.config.password &&
+      this.config.apiBaseUrl &&
+      this.config.publicBaseUrl
+    );
   }
 
   get apiBaseUrl() {
-    return this.config.apiBaseUrl || DEFAULT_API_BASE_URL;
+    return this.config.apiBaseUrl;
   }
 
   get publicBaseUrl() {
-    return this.config.publicBaseUrl || DEFAULT_PUBLIC_BASE_URL;
+    return this.config.publicBaseUrl;
   }
 
   async login() {
