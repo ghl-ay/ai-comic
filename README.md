@@ -12,6 +12,24 @@ AI 驱动的漫画创作工具，支持连载漫画自动生成。
 - **多存储支持**: 本地存储、腾讯云 COS、咸鱼云存储
 - **后台管理**: 管理员可配置 AI 模型和存储方案
 
+## 截图预览
+
+| 登录页面 | 漫画列表 |
+|:---:|:---:|
+| ![登录](screenshots/login.png) | ![漫画列表](screenshots/list.png) |
+
+| 角色管理 | 漫画详情 |
+|:---:|:---:|
+| ![角色管理](screenshots/role.png) | ![漫画详情](screenshots/comics.png) |
+
+| 分镜脚本 | 漫画预览 |
+|:---:|:---:|
+| ![分镜脚本](screenshots/Storyboard.png) | ![漫画预览](screenshots/Preview.png) |
+
+| 后台管理 |
+|:---:|
+| ![后台管理](screenshots/manage.png) |
+
 ## 环境要求
 
 - Node.js >= 18
