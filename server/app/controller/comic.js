@@ -74,6 +74,66 @@ class ComicController extends Controller {
       ctx.body = { error: err.message };
     }
   }
+
+  async createChapters() {
+    const { ctx } = this;
+    const { id: comicId } = ctx.params;
+    const { chapters, novelId } = ctx.request.body;
+
+    if (!chapters || !Array.isArray(chapters) || chapters.length === 0) {
+      ctx.status = 400;
+      ctx.body = { error: '请提供章节列表' };
+      return;
+    }
+
+    try {
+      // 验证漫画归属
+      const comic = await ctx.service.db.findComicByIdAndUserId(
+        parseInt(comicId),
+        ctx.state.user.id
+      );
+
+      if (!comic) {
+        ctx.status = 404;
+        ctx.body = { error: '漫画不存在' };
+        return;
+      }
+
+      // 批量创建章节
+      const createdChapters = [];
+      for (const ch of chapters) {
+        const chapterId = await ctx.service.db.createChapter(
+          parseInt(comicId),
+          ch.chapterNumber,
+          ch.title,
+          ch.layoutType
+        );
+
+        // 更新章节的 prompt 和角色
+        await ctx.service.db.updateChapter(chapterId, {
+          chapter_prompt: ch.chapterPrompt,
+          character_ids: JSON.stringify(ch.characterIds || []),
+        });
+
+        const chapter = await ctx.service.db.findChapterById(chapterId);
+        createdChapters.push(chapter);
+      }
+
+      // 关联小说
+      if (novelId) {
+        await ctx.service.db.updateNovel(novelId, ctx.state.user.id, {
+          comic_id: parseInt(comicId),
+          status: 'completed',
+        });
+      }
+
+      ctx.status = 201;
+      ctx.body = { chapters: createdChapters };
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
 }
 
 module.exports = ComicController;
