@@ -56,15 +56,31 @@ class NovelService extends Service {
       throw new Error('AI 返回内容为空');
     }
 
+    // 尝试直接解析
     try {
       return JSON.parse(content);
     } catch (_) {
-      // 尝试从内容中提取 JSON
+      // 继续尝试其他方法
+    }
+
+    // 尝试移除 markdown 代码块标记
+    let cleanedContent = content;
+
+    // 移除 ```json 或 ``` 开头和结尾
+    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      cleanedContent = codeBlockMatch[1].trim();
+      try {
+        return JSON.parse(cleanedContent);
+      } catch (_) {
+        // 继续尝试其他方法
+      }
     }
 
     // 查找 JSON 对象
-    const start = content.indexOf('{');
+    const start = cleanedContent.indexOf('{');
     if (start === -1) {
+      this.ctx.logger.error('AI 返回内容无法解析为 JSON:', content.substring(0, 500));
       throw new Error('AI 返回的内容不是有效 JSON');
     }
 
@@ -72,8 +88,8 @@ class NovelService extends Service {
     let inString = false;
     let escaped = false;
 
-    for (let i = start; i < content.length; i++) {
-      const char = content[i];
+    for (let i = start; i < cleanedContent.length; i++) {
+      const char = cleanedContent[i];
 
       if (inString) {
         if (escaped) {
@@ -94,14 +110,16 @@ class NovelService extends Service {
         depth--;
         if (depth === 0) {
           try {
-            return JSON.parse(content.slice(start, i + 1));
-          } catch (_) {
+            return JSON.parse(cleanedContent.slice(start, i + 1));
+          } catch (e) {
+            this.ctx.logger.error('JSON 解析失败:', e.message, '内容:', cleanedContent.slice(start, i + 1).substring(0, 500));
             throw new Error('AI 返回的内容不是有效 JSON');
           }
         }
       }
     }
 
+    this.ctx.logger.error('AI 返回内容无法找到完整 JSON:', content.substring(0, 500));
     throw new Error('AI 返回的内容不是有效 JSON');
   }
 
