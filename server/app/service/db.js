@@ -468,6 +468,75 @@ class DbService extends Service {
     return result.count;
   }
 
+  // 小说相关
+  createNovel(userId, title, content) {
+    const wordCount = content.length;
+    const stmt = this.db.prepare(
+      'INSERT INTO novels (user_id, title, content, word_count) VALUES (?, ?, ?, ?)'
+    );
+    const result = stmt.run(userId, title || null, content, wordCount);
+    return result.lastInsertRowid;
+  }
+
+  findNovelById(id) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM novels WHERE id = ?'
+    );
+    return stmt.get(id);
+  }
+
+  findNovelByIdAndUserId(id, userId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM novels WHERE id = ? AND user_id = ?'
+    );
+    return stmt.get(id, userId);
+  }
+
+  findNovelByComicId(comicId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM novels WHERE comic_id = ?'
+    );
+    return stmt.get(comicId);
+  }
+
+  updateNovel(id, userId, data) {
+    const fields = [];
+    const values = [];
+
+    if (data.title !== undefined) {
+      fields.push('title = ?');
+      values.push(data.title);
+    }
+    if (data.comic_id !== undefined) {
+      fields.push('comic_id = ?');
+      values.push(data.comic_id);
+    }
+    if (data.status !== undefined) {
+      fields.push('status = ?');
+      values.push(data.status);
+    }
+
+    if (fields.length === 0) {
+      return false;
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id, userId);
+    const stmt = this.db.prepare(
+      `UPDATE novels SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
+    );
+    const result = stmt.run(...values);
+    return result.changes > 0;
+  }
+
+  deleteNovel(id, userId) {
+    const stmt = this.db.prepare(
+      'DELETE FROM novels WHERE id = ? AND user_id = ?'
+    );
+    const result = stmt.run(id, userId);
+    return result.changes > 0;
+  }
+
   // 通用配置表相关方法
   getConfig(category, key) {
     const stmt = this.db.prepare(
