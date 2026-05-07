@@ -41,6 +41,7 @@ module.exports = app => {
   router.post('/api/novels/:id/analyze-style', app.middleware.jwt(), controller.novel.analyzeStyle);
   router.post('/api/novels/:id/extract-characters', app.middleware.jwt(), controller.novel.extractCharacters);
   router.post('/api/novels/:id/generate-chapters', app.middleware.jwt(), controller.novel.generateChapters);
+  router.get('/api/novels/by-comic/:comicId', app.middleware.jwt(), controller.novel.showByComicId);
 
   // AI 配置相关（读取需要登录，修改需要管理员权限）
   router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);

@@ -114,6 +114,33 @@ class NovelController extends Controller {
       ctx.body = { error: err.message };
     }
   }
+
+  async showByComicId() {
+    const { ctx } = this;
+    const { comicId } = ctx.params;
+
+    try {
+      const novel = await ctx.service.db.findNovelByComicId(parseInt(comicId));
+      if (!novel) {
+        ctx.status = 404;
+        ctx.body = { error: '未找到关联的小说' };
+        return;
+      }
+      // 验证用户权限
+      if (novel.user_id !== ctx.state.user.id) {
+        const comic = await ctx.service.db.findComicByIdAndUserId(novel.comic_id, ctx.state.user.id);
+        if (!comic) {
+          ctx.status = 403;
+          ctx.body = { error: '无权访问' };
+          return;
+        }
+      }
+      ctx.body = { novel };
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
 }
 
 module.exports = NovelController;
