@@ -24,6 +24,11 @@ const routes = [
     component: () => import('../views/ComicDetail.vue'),
   },
   {
+    path: '/novel-wizard',
+    name: 'NovelWizard',
+    component: () => import('../views/NovelWizard.vue'),
+  },
+  {
     path: '/create/:comicId/:chapterId?',
     name: 'CreateChapter',
     component: () => import('../views/CreateChapter.vue'),
