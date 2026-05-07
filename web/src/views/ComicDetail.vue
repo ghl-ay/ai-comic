@@ -43,6 +43,16 @@
             </div>
             <div>
               <v-btn
+                v-if="hasNovel"
+                variant="outlined"
+                color="info"
+                class="mr-2"
+                @click="openNovelDialog"
+              >
+                <v-icon left>mdi-book-open-variant</v-icon>
+                查看小说
+              </v-btn>
+              <v-btn
                 variant="outlined"
                 color="primary"
                 class="mr-2"
@@ -234,6 +244,21 @@
       >
         暂无漫画图片
       </v-snackbar>
+
+      <!-- 小说查看弹窗 -->
+      <v-dialog v-model="novelDialog" max-width="800">
+        <v-card>
+          <v-card-title>{{ novelTitle }}</v-card-title>
+          <v-card-text>
+            <v-progress-circular v-if="loadingNovel" indeterminate color="primary" />
+            <pre v-else style="white-space: pre-wrap; word-wrap: break-word;">{{ novelContent }}</pre>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn @click="novelDialog = false">关闭</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </template>
   </v-container>
 </template>
@@ -266,6 +291,11 @@ const titleInput = ref(null)
 const styleDialog = ref(false)
 const editStyleValue = ref('')
 const savingStyle = ref(false)
+const novelDialog = ref(false)
+const novelContent = ref('')
+const novelTitle = ref('')
+const loadingNovel = ref(false)
+const hasNovel = ref(false)
 
 const layoutOptions = [
   { title: '4 格分镜', value: 4 },
@@ -283,11 +313,39 @@ async function loadComic() {
   try {
     const res = await comicApi.getComic(route.params.id)
     comic.value = res.comic
+    // 检查是否有关联的小说
+    try {
+      const novelRes = await fetch(`/api/novels/by-comic/${route.params.id}`, {
+        credentials: 'include',
+      })
+      hasNovel.value = novelRes.ok
+    } catch (e) {
+      hasNovel.value = false
+    }
   } catch (e) {
     console.error('加载漫画失败', e)
     router.push('/comics')
   } finally {
     loading.value = false
+  }
+}
+
+async function openNovelDialog() {
+  loadingNovel.value = true
+  novelDialog.value = true
+  try {
+    const res = await fetch(`/api/novels/by-comic/${route.params.id}`, {
+      credentials: 'include',
+    })
+    if (res.ok) {
+      const data = await res.json()
+      novelContent.value = data.novel?.content || ''
+      novelTitle.value = data.novel?.title || '小说原文'
+    }
+  } catch (e) {
+    console.error('加载小说失败', e)
+  } finally {
+    loadingNovel.value = false
   }
 }
 
