@@ -76,8 +76,25 @@ CREATE TABLE IF NOT EXISTS configs (
   UNIQUE(category, key)
 );
 
+-- 小说表
+CREATE TABLE IF NOT EXISTS novels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  comic_id INTEGER,
+  title TEXT,
+  content TEXT NOT NULL,
+  word_count INTEGER,
+  status TEXT DEFAULT 'draft',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (comic_id) REFERENCES comics(id) ON DELETE SET NULL
+);
+
 -- 索引
 CREATE INDEX IF NOT EXISTS idx_characters_user ON characters(user_id);
 CREATE INDEX IF NOT EXISTS idx_comics_user ON comics(user_id);
 CREATE INDEX IF NOT EXISTS idx_chapters_comic ON chapters(comic_id);
 CREATE INDEX IF NOT EXISTS idx_ai_configs_user ON ai_configs(user_id);
+CREATE INDEX IF NOT EXISTS idx_novels_user ON novels(user_id);
+CREATE INDEX IF NOT EXISTS idx_novels_comic ON novels(comic_id);
