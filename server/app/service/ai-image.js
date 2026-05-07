@@ -71,6 +71,13 @@ class AiImageService extends Service {
   async generateComicPage(params) {
     const { stylePrompt, layoutType, script, characterReferences, previousChapterImage } = params;
 
+    this.ctx.logger.info('generateComicPage params:', {
+      stylePrompt: stylePrompt?.substring(0, 100),
+      layoutType,
+      characterCount: characterReferences?.length || 0,
+      previousChapterImage,
+    });
+
     const config = await this.getClient();
     if (!config) {
       this.ctx.throw(500, 'AI 图片服务未配置');
@@ -95,6 +102,7 @@ class AiImageService extends Service {
           );
           if (fs.existsSync(imagePath)) {
             referenceImagePaths.push(imagePath);
+            this.ctx.logger.info('Found character reference image:', imagePath);
           }
         }
       }
@@ -107,6 +115,9 @@ class AiImageService extends Service {
         );
         if (fs.existsSync(prevImagePath)) {
           previousChapterImagePath = prevImagePath;
+          this.ctx.logger.info('Found previous chapter image:', prevImagePath);
+        } else {
+          this.ctx.logger.warn('Previous chapter image not found:', prevImagePath);
         }
       }
 
@@ -117,7 +128,9 @@ class AiImageService extends Service {
           uploadPaths.push(previousChapterImagePath);
         }
 
+        this.ctx.logger.info('Uploading reference images:', uploadPaths.length, 'files');
         const referenceUrls = await this.uploadReferenceImages(uploadPaths);
+        this.ctx.logger.info('Uploaded reference URLs:', referenceUrls);
 
         if (uploadPaths.length > 0 && referenceUrls.length === 0) {
           throw new Error('角色参考图上传失败');
