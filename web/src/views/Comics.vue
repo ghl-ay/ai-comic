@@ -45,12 +45,12 @@
 
     <!-- 创建漫画按钮 -->
     <v-row>
-      <v-col cols="12" class="d-flex gap-2">
+      <v-col cols="12">
         <v-btn color="primary" @click="openCreateDialog">
           <v-icon left>mdi-plus</v-icon>
           创建新漫画
         </v-btn>
-        <v-btn color="secondary" to="/novel-wizard">
+        <v-btn color="primary" to="/novel-wizard" style="margin-left: 10px;">
           <v-icon left>mdi-file-document-plus</v-icon>
           上传小说生成漫画
         </v-btn>
