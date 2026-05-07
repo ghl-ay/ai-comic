@@ -19,7 +19,7 @@
         </v-col>
         <v-col cols="12">
           <v-textarea
-            v-model="localContent"
+            v-model="store.novelContent"
             label="小说内容"
             placeholder="请粘贴小说内容..."
             rows="12"
@@ -30,7 +30,7 @@
         </v-col>
         <v-col cols="12">
           <v-text-field
-            v-model="localTitle"
+            v-model="store.novelTitle"
             label="小说标题（可选）"
             hint="如果上传文件，将从文件名自动提取"
           />
@@ -41,22 +41,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useNovelWizardStore } from '../../stores/novelWizard'
 
 const store = useNovelWizardStore()
 
 const file = ref(null)
-const localContent = ref(store.novelContent)
-const localTitle = ref(store.novelTitle)
-
-watch(localContent, (val) => {
-  store.novelContent = val
-})
-
-watch(localTitle, (val) => {
-  store.novelTitle = val
-})
 
 function handleFileChange(f) {
   if (!f) return
@@ -65,16 +55,16 @@ function handleFileChange(f) {
   reader.onload = (e) => {
     const content = e.target.result
     if (content.length > 10000) {
-      localContent.value = content.substring(0, 10000)
+      store.novelContent = content.substring(0, 10000)
       alert('小说内容已截取前 10000 字')
     } else {
-      localContent.value = content
+      store.novelContent = content
     }
 
     // 从文件名提取标题
-    if (!localTitle.value) {
+    if (!store.novelTitle) {
       const fileName = f.name.replace(/\.txt$/i, '')
-      localTitle.value = fileName
+      store.novelTitle = fileName
     }
   }
   reader.readAsText(f)
