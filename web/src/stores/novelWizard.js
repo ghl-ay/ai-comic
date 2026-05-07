@@ -22,7 +22,7 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
   const canProceed = computed(() => {
     switch (currentStep.value) {
       case 1:
-        return novelContent.value.trim().length > 0 && novelContent.value.length <= 5000
+        return novelContent.value.trim().length > 0 && novelContent.value.length <= 10000
       case 2:
         return style.value.title.trim().length > 0
       case 3:

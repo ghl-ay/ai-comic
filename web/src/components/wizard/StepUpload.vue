@@ -24,8 +24,8 @@
             placeholder="请粘贴小说内容..."
             rows="12"
             auto-grow
-            :counter="5000"
-            :rules="[v => !v || v.length <= 5000 || '内容不能超过 5000 字']"
+            :counter="10000"
+            :rules="[v => !v || v.length <= 10000 || '内容不能超过 10000 字']"
           />
         </v-col>
         <v-col cols="12">
@@ -64,9 +64,9 @@ function handleFileChange(f) {
   const reader = new FileReader()
   reader.onload = (e) => {
     const content = e.target.result
-    if (content.length > 5000) {
-      localContent.value = content.substring(0, 5000)
-      alert('小说内容已截取前 5000 字')
+    if (content.length > 10000) {
+      localContent.value = content.substring(0, 10000)
+      alert('小说内容已截取前 10000 字')
     } else {
       localContent.value = content
     }

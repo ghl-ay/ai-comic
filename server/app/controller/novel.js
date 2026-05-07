@@ -12,9 +12,9 @@ class NovelController extends Controller {
       return;
     }
 
-    if (content.length > 5000) {
+    if (content.length > 10000) {
       ctx.status = 400;
-      ctx.body = { error: '小说内容不能超过 5000 字' };
+      ctx.body = { error: '小说内容不能超过 10000 字' };
       return;
     }
 
