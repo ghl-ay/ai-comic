@@ -1,0 +1,406 @@
+/* web/src/assets/styles/variables.css */
+/* 全局 CSS 变量 - 主题系统核心 */
+
+:root {
+  /* ==================== 颜色变量 ==================== */
+  
+  /* 主色调 */
+  --color-primary: #6366F1;
+  --color-secondary: #8B5CF6;
+  --color-accent: #EC4899;
+  
+  /* 功能色 */
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+  --color-success: #10B981;
+  
+  /* 背景色 */
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-variant: #F1F5F9;
+  --color-surface-bright: #FFFFFF;
+  --color-surface-dim: #F8FAFC;
+  
+  /* 容器色 */
+  --color-primary-container: #E0E7FF;
+  --color-secondary-container: #EDE9FE;
+  --color-error-container: #FEE2E2;
+  
+  /* 文本色 */
+  --color-on-primary: #FFFFFF;
+  --color-on-secondary: #FFFFFF;
+  --color-on-error: #FFFFFF;
+  --color-on-background: #1E293B;
+  --color-on-surface: #1E293B;
+  --color-on-surface-variant: #64748B;
+  
+  /* 边框和分割线 */
+  --color-outline: #E2E8F0;
+  --color-outline-variant: #F1F5F9;
+  
+  /* 阴影 */
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  
+  /* 状态层 */
+  --color-state-hover: rgba(99, 102, 241, 0.08);
+  --color-state-focus: rgba(99, 102, 241, 0.12);
+  --color-state-pressed: rgba(99, 102, 241, 0.16);
+  --color-state-dragged: rgba(99, 102, 241, 0.2);
+  
+  /* ==================== 字体变量 ==================== */
+  
+  /* 字体族 */
+  --font-family-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-family-display: 'Poppins', 'Noto Sans SC', sans-serif;
+  
+  /* 字号 */
+  --font-size-h1: 2.5rem;
+  --font-size-h2: 2rem;
+  --font-size-h3: 1.75rem;
+  --font-size-h4: 1.5rem;
+  --font-size-h5: 1.25rem;
+  --font-size-h6: 1.125rem;
+  --font-size-body-lg: 1.125rem;
+  --font-size-body: 1rem;
+  --font-size-body-sm: 0.875rem;
+  --font-size-body-xs: 0.8125rem;
+  --font-size-caption: 0.75rem;
+  --font-size-overline: 0.6875rem;
+  --font-size-button-lg: 1rem;
+  --font-size-button: 0.875rem;
+  --font-size-button-sm: 0.8125rem;
+  
+  /* 字重 */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  /* 行高 */
+  --line-height-none: 1;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.5;
+  
+  /* 字间距 */
+  --letter-spacing-tighter: -0.05em;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  --letter-spacing-widest: 0.1em;
+  --letter-spacing-heading: -0.025em;
+  --letter-spacing-body: 0;
+  --letter-spacing-caption: 0.025em;
+  --letter-spacing-overline: 0.1em;
+  
+  /* ==================== 间距变量 ==================== */
+  
+  /* 基础间距 (基于 4px 网格) */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;    /* 4px */
+  --spacing-2: 0.5rem;     /* 8px */
+  --spacing-3: 0.75rem;    /* 12px */
+  --spacing-4: 1rem;       /* 16px */
+  --spacing-5: 1.25rem;    /* 20px */
+  --spacing-6: 1.5rem;     /* 24px */
+  --spacing-8: 2rem;       /* 32px */
+  --spacing-10: 2.5rem;    /* 40px */
+  --spacing-12: 3rem;      /* 48px */
+  --spacing-16: 4rem;      /* 64px */
+  --spacing-20: 5rem;      /* 80px */
+  --spacing-24: 6rem;      /* 96px */
+  
+  /* ==================== 圆角变量 ==================== */
+  
+  --border-radius-none: 0;
+  --border-radius-sm: 0.25rem;    /* 4px */
+  --border-radius-md: 0.5rem;     /* 8px */
+  --border-radius-lg: 0.75rem;    /* 12px */
+  --border-radius-xl: 1rem;       /* 16px */
+  --border-radius-2xl: 1.5rem;    /* 24px */
+  --border-radius-full: 9999px;
+  
+  /* ==================== 阴影变量 ==================== */
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  
+  /* ==================== 过渡动画变量 ==================== */
+  
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slower: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 特定属性过渡 */
+  --transition-colors: color 200ms ease, background-color 200ms ease, border-color 200ms ease;
+  --transition-shadow: box-shadow 200ms ease;
+  --transition-transform: transform 200ms ease;
+  --transition-opacity: opacity 200ms ease;
+  
+  /* ==================== Z-index 层级 ==================== */
+  
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+  --z-index-toast: 1080;
+  
+  /* ==================== 断点变量 (仅供参考，实际使用 JS) ==================== */
+  
+  --breakpoint-xs: 0;
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 960px;
+  --breakpoint-lg: 1280px;
+  --breakpoint-xl: 1920px;
+  
+  /* ==================== 容器最大宽度 ==================== */
+  
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+}
+
+/* ==================== 深色主题 ==================== */
+
+[data-theme="dark"] {
+  /* 主色调 */
+  --color-primary: #818CF8;
+  --color-secondary: #A78BFA;
+  --color-accent: #F472B6;
+  
+  /* 功能色 */
+  --color-error: #F87171;
+  --color-warning: #FBBF24;
+  --color-info: #60A5FA;
+  --color-success: #34D399;
+  
+  /* 背景色 */
+  --color-background: #0F172A;
+  --color-surface: #1E293B;
+  --color-surface-variant: #334155;
+  --color-surface-bright: #334155;
+  --color-surface-dim: #0F172A;
+  
+  /* 容器色 */
+  --color-primary-container: #312E81;
+  --color-secondary-container: #4C1D95;
+  --color-error-container: #7F1D1D;
+  
+  /* 文本色 */
+  --color-on-primary: #FFFFFF;
+  --color-on-secondary: #FFFFFF;
+  --color-on-error: #FFFFFF;
+  --color-on-background: #F8FAFC;
+  --color-on-surface: #F8FAFC;
+  --color-on-surface-variant: #94A3B8;
+  
+  /* 边框和分割线 */
+  --color-outline: #475569;
+  --color-outline-variant: #334155;
+  
+  /* 阴影 */
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  
+  /* 状态层 */
+  --color-state-hover: rgba(129, 140, 248, 0.08);
+  --color-state-focus: rgba(129, 140, 248, 0.12);
+  --color-state-pressed: rgba(129, 140, 248, 0.16);
+  --color-state-dragged: rgba(129, 140, 248, 0.2);
+  
+  /* 阴影调整 - 深色主题下需要更深的阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== 基础样式重置 ==================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  color: var(--color-on-background);
+  background-color: var(--color-background);
+  transition: var(--transition-colors);
+}
+
+/* ==================== 排版样式 ==================== */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  color: var(--color-on-background);
+  margin-bottom: var(--spacing-4);
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  letter-spacing: var(--letter-spacing-heading);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  letter-spacing: var(--letter-spacing-heading);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+h4 {
+  font-size: var(--font-size-h4);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+h5 {
+  font-size: var(--font-size-h5);
+  font-weight: var(--font-weight-semibold);
+}
+
+h6 {
+  font-size: var(--font-size-h6);
+  font-weight: var(--font-weight-semibold);
+}
+
+p {
+  margin-bottom: var(--spacing-4);
+  line-height: var(--line-height-body);
+}
+
+/* ==================== 链接样式 ==================== */
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: var(--transition-colors);
+}
+
+a:hover {
+  color: var(--color-secondary);
+  text-decoration: underline;
+}
+
+/* ==================== 选择样式 ==================== */
+
+::selection {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* ==================== 滚动条样式 ==================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-variant);
+  border-radius: var(--border-radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-outline);
+  border-radius: var(--border-radius-full);
+  transition: var(--transition-colors);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-on-surface-variant);
+}
+
+/* ==================== 焦点样式 ==================== */
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* ==================== 工具类 ==================== */
+
+/* 文本截断 */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 响应式容器 */
+.container {
+  width: 100%;
+  max-width: var(--container-xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+}
+
+@media (min-width: 600px) {
+  .container {
+    padding-left: var(--spacing-6);
+    padding-right: var(--spacing-6);
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    padding-left: var(--spacing-8);
+    padding-right: var(--spacing-8);
+  }
+}
