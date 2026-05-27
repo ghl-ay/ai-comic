@@ -188,15 +188,17 @@ watch(viewMode, (value) => {
 .filter-toolbar__filters {
   display: flex;
   gap: 12px;
+  margin-left: auto;
 }
 
 .filter-toolbar__select {
-  width: 140px;
+  width: 180px;
 }
 
 .filter-toolbar__select :deep(.v-field) {
   border-radius: 12px !important;
   background: var(--color-surface-variant) !important;
+  min-height: 44px !important;
 }
 
 .filter-toolbar__select :deep(.v-field.v-field--focused) {
