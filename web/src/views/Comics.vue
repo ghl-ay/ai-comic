@@ -100,8 +100,22 @@
               :rules="[v => !!v || '请输入漫画标题']"
               required
               variant="outlined"
-              class="mb-4"
+              class="mb-2"
             />
+            
+            <div class="mb-4">
+              <v-btn
+                variant="text"
+                size="small"
+                color="primary"
+                :loading="aiLoading"
+                :disabled="!createForm.title.trim()"
+                @click="generateWithAi"
+              >
+                <v-icon left size="small">mdi-auto-fix</v-icon>
+                AI 一键生成
+              </v-btn>
+            </div>
             
             <v-textarea
               v-model="createForm.stylePrompt"
@@ -165,6 +179,11 @@ import comicApi from '../api/comic'
 import ComicCard from '../components/business/ComicCard.vue'
 import FilterToolbar from '../components/business/FilterToolbar.vue'
 import EmptyState from '../components/business/EmptyState.vue'
+import { useAiFormFill } from '../composables/useAiFormFill'
+
+const { loading: aiLoading, fillForm: aiFillForm } = useAiFormFill({
+  onError: (msg) => alert('AI 生成失败：' + msg),
+})
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -250,6 +269,25 @@ async function loadComics() {
 function openCreateDialog() {
   createForm.value = { title: '', stylePrompt: '' }
   createDialog.value = true
+}
+
+// AI 一键生成
+async function generateWithAi() {
+  if (!createForm.value.title.trim()) return
+
+  const schema = {
+    stylePrompt: '漫画风格提示词，描述画面风格，如：日系黑白漫画、彩色卡通风格、水墨画风等，20-50字',
+  }
+
+  await aiFillForm({
+    schema,
+    context: `漫画标题：${createForm.value.title}`,
+    formData: createForm.value,
+    fillFields: ['stylePrompt'],
+    onFill: (data) => {
+      if (data.stylePrompt) createForm.value.stylePrompt = data.stylePrompt
+    },
+  })
 }
 
 // 创建漫画
