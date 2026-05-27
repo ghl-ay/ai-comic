@@ -172,7 +172,7 @@ watch(viewMode, (value) => {
 }
 
 .filter-toolbar__search-wrapper {
-  flex: 1;
+  flex: 0 1 280px;
   min-width: 200px;
 }
 
