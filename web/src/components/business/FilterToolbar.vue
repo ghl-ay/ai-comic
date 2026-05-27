@@ -1,78 +1,80 @@
 <!-- web/src/components/business/FilterToolbar.vue -->
 <template>
-  <v-card class="filter-toolbar" elevation="0" variant="outlined">
-    <v-card-text class="filter-toolbar__content">
-      <v-row align="center">
-        <v-col cols="12" md="4">
-          <v-text-field
-            v-model="search"
-            prepend-inner-icon="mdi-magnify"
-            label="搜索漫画..."
-            variant="outlined"
-            density="compact"
-            hide-details
-            clearable
-            class="filter-toolbar__search"
-            @update:model-value="updateSearch"
-          />
-        </v-col>
+  <div class="filter-toolbar">
+    <div class="filter-toolbar__inner">
+      <!-- 搜索框 -->
+      <div class="filter-toolbar__search-wrapper">
+        <v-text-field
+          v-model="search"
+          prepend-inner-icon="mdi-magnify"
+          placeholder="搜索漫画..."
+          variant="solo-filled"
+          density="compact"
+          hide-details
+          clearable
+          flat
+          class="filter-toolbar__search"
+          @update:model-value="updateSearch"
+        />
+      </div>
+      
+      <!-- 筛选选项 -->
+      <div class="filter-toolbar__filters">
+        <v-select
+          v-model="sortBy"
+          :items="sortOptions"
+          placeholder="排序"
+          variant="solo-filled"
+          density="compact"
+          hide-details
+          flat
+          prepend-inner-icon="mdi-sort"
+          class="filter-toolbar__select"
+          @update:model-value="updateSort"
+        />
         
-        <v-col cols="12" md="3">
-          <v-select
-            v-model="sortBy"
-            :items="sortOptions"
-            label="排序方式"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="filter-toolbar__sort"
-            @update:model-value="updateSort"
-          />
-        </v-col>
+        <v-select
+          v-model="filterStatus"
+          :items="statusOptions"
+          placeholder="状态"
+          variant="solo-filled"
+          density="compact"
+          hide-details
+          flat
+          prepend-inner-icon="mdi-filter"
+          class="filter-toolbar__select"
+          @update:model-value="updateFilter"
+        />
+      </div>
+      
+      <!-- 视图切换 -->
+      <div class="filter-toolbar__actions">
+        <div class="filter-toolbar__view-toggle">
+          <button
+            class="filter-toolbar__view-btn"
+            :class="{ 'filter-toolbar__view-btn--active': viewMode === 'grid' }"
+            @click="viewMode = 'grid'"
+          >
+            <v-icon size="18">mdi-view-grid</v-icon>
+          </button>
+          <button
+            class="filter-toolbar__view-btn"
+            :class="{ 'filter-toolbar__view-btn--active': viewMode === 'list' }"
+            @click="viewMode = 'list'"
+          >
+            <v-icon size="18">mdi-view-list</v-icon>
+          </button>
+        </div>
         
-        <v-col cols="12" md="3">
-          <v-select
-            v-model="filterStatus"
-            :items="statusOptions"
-            label="状态筛选"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="filter-toolbar__filter"
-            @update:model-value="updateFilter"
-          />
-        </v-col>
-        
-        <v-col cols="12" md="2">
-          <div class="filter-toolbar__actions">
-            <v-btn-toggle
-              v-model="viewMode"
-              mandatory
-              density="compact"
-              class="filter-toolbar__view-toggle"
-            >
-              <v-btn value="grid" icon size="small">
-                <v-icon size="20">mdi-view-grid</v-icon>
-              </v-btn>
-              <v-btn value="list" icon size="small">
-                <v-icon size="20">mdi-view-list</v-icon>
-              </v-btn>
-            </v-btn-toggle>
-            
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              class="filter-toolbar__refresh"
-              @click="$emit('refresh')"
-            >
-              <v-icon size="20">mdi-refresh</v-icon>
-            </v-btn>
-          </div>
-        </v-col>
-      </v-row>
-    </v-card-text>
-  </v-card>
+        <button
+          class="filter-toolbar__refresh-btn"
+          @click="$emit('refresh')"
+        >
+          <v-icon size="18">mdi-refresh</v-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -151,68 +153,160 @@ watch(viewMode, (value) => {
 
 <style scoped>
 .filter-toolbar {
-  background: var(--color-surface);
-  border-radius: var(--border-radius-xl);
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
-.filter-toolbar__content {
-  padding: 16px;
+.filter-toolbar__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-surface);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease;
+}
+
+.filter-toolbar__inner:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.filter-toolbar__search-wrapper {
+  flex: 1;
+  min-width: 200px;
 }
 
 .filter-toolbar__search :deep(.v-field) {
-  border-radius: var(--border-radius-lg);
+  border-radius: 12px !important;
+  background: var(--color-surface-variant) !important;
 }
 
-.filter-toolbar__sort :deep(.v-field) {
-  border-radius: var(--border-radius-lg);
+.filter-toolbar__search :deep(.v-field.v-field--focused) {
+  background: var(--color-surface) !important;
 }
 
-.filter-toolbar__filter :deep(.v-field) {
-  border-radius: var(--border-radius-lg);
+.filter-toolbar__filters {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-toolbar__select {
+  width: 140px;
+}
+
+.filter-toolbar__select :deep(.v-field) {
+  border-radius: 12px !important;
+  background: var(--color-surface-variant) !important;
+}
+
+.filter-toolbar__select :deep(.v-field.v-field--focused) {
+  background: var(--color-surface) !important;
 }
 
 .filter-toolbar__actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
 }
 
 .filter-toolbar__view-toggle {
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
+  display: flex;
+  background: var(--color-surface-variant);
+  border-radius: 10px;
+  padding: 3px;
 }
 
-.filter-toolbar__view-toggle :deep(.v-btn) {
-  border-radius: 0;
-}
-
-.filter-toolbar__refresh {
+.filter-toolbar__view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
   color: var(--color-on-surface-variant);
   transition: all 0.2s ease;
 }
 
-.filter-toolbar__refresh:hover {
+.filter-toolbar__view-btn:hover {
+  color: var(--color-on-surface);
+  background: var(--color-surface);
+}
+
+.filter-toolbar__view-btn--active {
   color: var(--color-primary);
-  transform: rotate(180deg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-toolbar__refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: var(--color-surface-variant);
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--color-on-surface-variant);
+  transition: all 0.2s ease;
+}
+
+.filter-toolbar__refresh-btn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-container);
+}
+
+.filter-toolbar__refresh-btn:hover :deep(.v-icon) {
+  animation: spin 0.5s ease;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 响应式调整 */
 @media (max-width: 960px) {
-  .filter-toolbar__content {
+  .filter-toolbar__inner {
+    flex-wrap: wrap;
     padding: 12px;
   }
   
+  .filter-toolbar__search-wrapper {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .filter-toolbar__filters {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .filter-toolbar__select {
+    flex: 1;
+    min-width: 120px;
+    width: auto;
+  }
+  
   .filter-toolbar__actions {
+    width: 100%;
     justify-content: center;
-    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-outline-variant);
   }
 }
 
 /* 深色主题调整 */
-[data-theme="dark"] .filter-toolbar {
-  background: var(--color-surface-variant);
-  border-color: var(--color-outline);
+[data-theme="dark"] .filter-toolbar__inner {
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .filter-toolbar__inner:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 </style>
