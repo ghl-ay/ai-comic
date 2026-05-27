@@ -1,6 +1,6 @@
 <!-- web/src/components/business/ChapterList.vue -->
 <template>
-  <v-card class="chapter-list" elevation="0" variant="outlined">
+  <v-card class="chapter-list" elevation="0">
     <v-card-title class="chapter-list__header">
       <div class="chapter-list__header-content">
         <v-icon size="24" color="primary">mdi-book-open-page-variant</v-icon>
@@ -158,6 +158,7 @@ function getStatusText(status) {
   background: var(--color-surface);
   border-radius: var(--border-radius-xl);
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .chapter-list__header {
@@ -318,7 +319,6 @@ function getStatusText(status) {
 /* 深色主题调整 */
 [data-theme="dark"] .chapter-list {
   background: var(--color-surface-variant);
-  border-color: var(--color-outline);
 }
 
 [data-theme="dark"] .chapter-list__header {

@@ -1,6 +1,6 @@
 <!-- web/src/components/business/ComicInfo.vue -->
 <template>
-  <v-card class="comic-info" elevation="0" variant="outlined">
+  <v-card class="comic-info" elevation="0">
     <div class="comic-info__image-container">
       <v-img
         v-if="comic.cover_image"
@@ -154,6 +154,7 @@ function formatDate(dateStr) {
   background: var(--color-surface);
   border-radius: var(--border-radius-xl);
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .comic-info__image-container {
@@ -315,6 +316,5 @@ function formatDate(dateStr) {
 /* 深色主题调整 */
 [data-theme="dark"] .comic-info {
   background: var(--color-surface-variant);
-  border-color: var(--color-outline);
 }
 </style>
