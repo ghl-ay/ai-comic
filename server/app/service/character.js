@@ -29,9 +29,11 @@ class CharacterService extends Service {
     }
 
     // 生成参考图
-    const result = await this.ctx.service.aiImage.generateCharacterReference(
-      character.appearance
-    );
+    const result = await this.ctx.service.aiImage.generateCharacterReference({
+      name: character.name,
+      description: character.description,
+      appearance: character.appearance,
+    });
 
     // 更新角色
     await this.ctx.service.db.updateCharacter(characterId, userId, {

@@ -24,10 +24,6 @@
             <v-icon left>mdi-account-group</v-icon>
             用户管理
           </v-tab>
-          <v-tab to="/admin/storage">
-            <v-icon left>mdi-image</v-icon>
-            图片存储
-          </v-tab>
         </v-tabs>
 
         <router-view />

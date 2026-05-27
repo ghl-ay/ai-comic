@@ -29,14 +29,18 @@ class AiImageService extends Service {
     return config;
   }
 
-  async generateCharacterReference(appearance) {
+  async generateCharacterReference(params) {
+    const { name, description, appearance } = params;
     const config = await this.getClient();
     if (!config) {
       this.ctx.throw(500, 'AI 图片服务未配置');
     }
 
     const provider = createImageProvider(config.apiFormat, config);
-    const prompt = `Character reference sheet, full body front view, ${appearance}, white background, clean design, consistent character design, anime manga style, high quality, detailed. No text, no watermark.`;
+    const prompt = `角色参考图，三视图，正面视图，侧面视图，背面视图，全身，白色背景，一致的设计，动漫风格，高质量，详细。
+角色名称：${name}
+角色描述：${description || '无'}
+外观描述：${appearance}`;
 
     try {
       const result = await provider.generateImage({ prompt });
@@ -112,18 +116,16 @@ class AiImageService extends Service {
 
       let result;
       if (config.apiFormat === 'grsai') {
-        const uploadPaths = [...referenceImagePaths];
-        if (previousChapterImagePath) {
-          uploadPaths.push(previousChapterImagePath);
+        const referenceBase64Urls = [];
+        for (const imgPath of [...referenceImagePaths, previousChapterImagePath].filter(Boolean)) {
+          const imageBuffer = fs.readFileSync(imgPath);
+          const base64 = imageBuffer.toString('base64');
+          const ext = path.extname(imgPath).toLowerCase();
+          const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+          referenceBase64Urls.push(`data:${mimeType};base64,${base64}`);
         }
 
-        const referenceUrls = await this.uploadReferenceImages(uploadPaths);
-
-        if (uploadPaths.length > 0 && referenceUrls.length === 0) {
-          throw new Error('角色参考图上传失败');
-        }
-
-        result = await provider.generateImage({ prompt, referenceUrls });
+        result = await provider.generateImage({ prompt, referenceUrls: referenceBase64Urls });
       } else {
         const imageInputs = [...referenceImagePaths];
         if (previousChapterImagePath) {
@@ -157,13 +159,6 @@ class AiImageService extends Service {
     }
   }
 
-  async uploadReferenceImages(imagePaths) {
-    const urls = [];
-    for (const imagePath of imagePaths) {
-      urls.push(await this.ctx.service.objectStorage.uploadReferenceImage(imagePath));
-    }
-    return urls;
-  }
 }
 
 module.exports = AiImageService;
