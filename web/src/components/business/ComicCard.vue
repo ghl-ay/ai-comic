@@ -50,16 +50,6 @@
         >
           {{ comic.chapterCount }} 章节
         </v-chip>
-        
-        <v-chip
-          v-if="comic.style_prompt"
-          size="small"
-          color="secondary"
-          variant="flat"
-          class="comic-card__badge"
-        >
-          {{ comic.style_prompt }}
-        </v-chip>
       </div>
     </div>
     
