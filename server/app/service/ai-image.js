@@ -73,7 +73,7 @@ class AiImageService extends Service {
   }
 
   async generateComicPage(params) {
-    const { stylePrompt, layoutType, script, characterReferences, previousChapterImage } = params;
+    const { comicTitle, stylePrompt, layoutType, chapterPrompt, script, characterReferences, previousChapter } = params;
 
     const config = await this.getClient();
     if (!config) {
@@ -82,11 +82,13 @@ class AiImageService extends Service {
 
     const provider = createImageProvider(config.apiFormat, config);
     const prompt = BaseImageProvider.buildComicPagePrompt({
+      comicTitle,
       stylePrompt,
       layoutType,
+      chapterPrompt,
       script,
       characterReferences,
-      previousChapterImage,
+      previousChapter,
     });
 
     try {
@@ -103,11 +105,12 @@ class AiImageService extends Service {
         }
       }
 
+      // 上一章参考图
       let previousChapterImagePath = null;
-      if (previousChapterImage) {
+      if (previousChapter?.image) {
         const prevImagePath = path.join(
           this.app.config.comicImageDir || 'public/images/comics',
-          previousChapterImage
+          previousChapter.image
         );
         if (fs.existsSync(prevImagePath)) {
           previousChapterImagePath = prevImagePath;
@@ -117,12 +120,19 @@ class AiImageService extends Service {
       let result;
       if (config.apiFormat === 'grsai') {
         const referenceBase64Urls = [];
-        for (const imgPath of [...referenceImagePaths, previousChapterImagePath].filter(Boolean)) {
+        // 先添加角色参考图
+        for (const imgPath of referenceImagePaths) {
           const imageBuffer = fs.readFileSync(imgPath);
           const base64 = imageBuffer.toString('base64');
           const ext = path.extname(imgPath).toLowerCase();
           const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
           referenceBase64Urls.push(`data:${mimeType};base64,${base64}`);
+        }
+        // 再添加上一章参考图
+        if (previousChapterImagePath) {
+          const imageBuffer = fs.readFileSync(previousChapterImagePath);
+          const base64 = imageBuffer.toString('base64');
+          referenceBase64Urls.push(`data:image/png;base64,${base64}`);
         }
 
         result = await provider.generateImage({ prompt, referenceUrls: referenceBase64Urls });

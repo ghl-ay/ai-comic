@@ -54,56 +54,91 @@ class BaseImageProvider {
    * 构建漫画页面提示词
    */
   static buildComicPagePrompt(params) {
-    const { stylePrompt, layoutType, script, characterReferences, previousChapterImage } = params;
-    const charactersById = new Map(characterReferences.map(character => [character.id, character]));
+    const { comicTitle, stylePrompt, layoutType, chapterPrompt, script, characterReferences, previousChapter } = params;
 
+    // 构建图片顺序说明
+    let imageIndex = 1;
+    const imageDescriptions = [];
+    for (const char of characterReferences) {
+      if (char.imageUrl) {
+        imageDescriptions.push(`第${imageIndex}张图片是「${char.name}」的角色参考图`);
+        imageIndex++;
+      }
+    }
+    if (previousChapter?.image) {
+      imageDescriptions.push(`第${imageIndex}张图片是上一章的漫画参考图`);
+      imageIndex++;
+    }
+
+    // 构建角色库描述
+    const characterDescriptions = characterReferences.length > 0
+      ? characterReferences.map((char, index) => {
+        const lines = [`【${char.name}】`];
+        if (char.description) lines.push(`角色描述：${char.description}`);
+        if (char.appearance) lines.push(`外观特征：${char.appearance}`);
+        if (char.imageUrl) lines.push(`参考图：第${index + 1}张图片`);
+        return lines.join('\n');
+      }).join('\n\n')
+      : '未提供角色信息。';
+
+    // 构建分镜脚本描述
     const panelDescriptions = script.panels.map((panel, index) => {
       const panelCharacters = Array.isArray(panel.characters) ? panel.characters : [];
       const characterNames = panelCharacters
-        .map(id => charactersById.get(id)?.name || `Character ${id}`)
-        .join(', ') || 'none specified';
+        .map(id => {
+          const char = characterReferences.find(c => c.id === id);
+          return char ? char.name : `角色${id}`;
+        })
+        .join('、') || '无';
 
-      return [
-        `Panel ${index + 1}:`,
-        `Scene: ${panel.scene || ''}`,
-        `Dialogue / speech bubbles: ${panel.dialogue || '(no dialogue)'}`,
-        `Characters in panel: ${characterNames}`,
-      ].join('\n');
+      const lines = [`第${index + 1}格`];
+      if (panel.scene) lines.push(`场景：${panel.scene}`);
+      if (panel.dialogue) lines.push(`对白：${panel.dialogue}`);
+      lines.push(`出场角色：${characterNames}`);
+      return lines.join('\n');
     }).join('\n\n');
 
-    const characterDescriptions = characterReferences.length > 0
-      ? characterReferences.map(character => {
-        return [
-          `ID ${character.id} - ${character.name}`,
-          `Description: ${character.description || 'Not provided'}`,
-          `Appearance: ${character.appearance || 'Not provided'}`,
-          `Reference image: ${character.imageUrl ? 'provided as input image' : 'not provided'}`,
-        ].join('\n');
-      }).join('\n\n')
-      : 'No character library entries were provided.';
+    // 构建完整提示词
+    let prompt = `【漫画信息】
+漫画标题：${comicTitle}
+画面风格：${stylePrompt}
 
-    let prompt = `Create a single ${layoutType}-panel comic page in this visual style: ${stylePrompt}.
-
-Panel layout:
-${layoutType} distinct panels arranged in a clean comic grid with clear panel borders.
-
-Character library:
+【角色信息】
 ${characterDescriptions}
 
-Panel script:
-${panelDescriptions}
+${imageDescriptions.length > 0 ? `【图片说明】\n${imageDescriptions.join('\n')}\n\n` : ''}【本章节信息】
+章节提示词：${chapterPrompt || '未提供'}
+分镜数量：${layoutType}格
 
-Requirements:
-- Match each panel scene, action, and character list exactly.
-- Use the character library as the source of truth for character design, clothing, body type, hairstyle, and visual personality.
-- If reference images are provided, preserve those designs across every panel.
-- Readable Chinese speech bubbles for every non-empty dialogue line.
-- Do not omit dialogue. Keep speech bubble text concise, legible, and placed inside the correct panel.
-- Preserve the requested visual style and do not override it with another color mode.`;
+分镜脚本：
+${panelDescriptions}`;
 
-    if (previousChapterImage) {
-      prompt += '\n- Maintain visual continuity with the previous chapter reference image.';
+    // 添加上一章信息
+    if (previousChapter) {
+      prompt += `\n\n【上一章参考】`;
+      if (previousChapter.chapterPrompt) {
+        prompt += `\n上一章提示词：${previousChapter.chapterPrompt}`;
+      }
+      if (previousChapter.script?.panels) {
+        prompt += `\n上一章分镜脚本：`;
+        for (const panel of previousChapter.script.panels) {
+          prompt += `\n第${panel.number}格：`;
+          if (panel.scene) prompt += `场景：${panel.scene}；`;
+          if (panel.dialogue) prompt += `对白：${panel.dialogue}`;
+        }
+      }
+      if (previousChapter.image) {
+        prompt += `\n上一章参考图：第${imageIndex}张图片`;
+      }
     }
+
+    prompt += `\n\n【绘制要求】
+- 严格按照分镜脚本的场景、动作和角色列表进行绘制
+- 以角色信息作为角色设计、服装、体型、发型的依据
+- 如果提供了角色参考图，保持角色外观一致
+- 如果提供了上一章参考图，保持视觉风格和剧情连贯性
+- 对白使用中文气泡文字，清晰可读，不要省略
+- 保持要求的视觉风格，不要切换为其他色彩模式`;
 
     return prompt;
   }
