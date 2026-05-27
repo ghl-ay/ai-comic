@@ -33,6 +33,7 @@ module.exports = app => {
   router.delete('/api/chapters/:id', app.middleware.jwt(), controller.chapter.destroy);
   router.post('/api/chapters/:id/generate-script', app.middleware.jwt(), controller.chapter.generateScript);
   router.post('/api/chapters/:id/generate-image', app.middleware.jwt(), controller.chapter.generateImage);
+  router.post('/api/chapters/:id/generate-prompt', app.middleware.jwt(), controller.chapter.generateChapterPrompt);
 
   // 小说相关（需要登录）
   router.post('/api/novels', app.middleware.jwt(), controller.novel.create);
@@ -55,6 +56,9 @@ module.exports = app => {
   // 管理员接口（需要管理员权限）
   router.get('/api/admin/users', app.middleware.jwt(), app.middleware.admin(), controller.admin.getUsers);
   router.put('/api/admin/users/:id/admin', app.middleware.jwt(), app.middleware.admin(), controller.admin.setUserAdmin);
+
+  // AI 辅助功能（需要登录）
+  router.post('/api/ai-assist/fill-form', app.middleware.jwt(), controller.aiAssist.fillForm);
 
   // 图片访问（通过 token 认证，无需登录）
   router.get('/api/images/:type/:filename', controller.images.show);
