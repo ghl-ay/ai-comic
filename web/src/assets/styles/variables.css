@@ -318,7 +318,7 @@ a {
 
 a:hover {
   color: var(--color-secondary);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* ==================== 选择样式 ==================== */
