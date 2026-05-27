@@ -2,10 +2,8 @@
 <template>
   <v-app-bar
     app
-    :elevation="scrolled ? 4 : 0"
-    :color="scrolled ? 'surface' : 'transparent'"
+    elevation="0"
     class="app-navigation"
-    :class="{ 'app-navigation--scrolled': scrolled }"
   >
     <v-container class="d-flex align-center">
       <!-- Logo -->
@@ -134,7 +132,6 @@ const vuetifyTheme = useTheme()
 
 // 状态
 const drawer = ref(false)
-const scrolled = ref(false)
 
 // 计算属性
 const isDark = computed(() => themeStore.isDark)
@@ -168,31 +165,17 @@ async function logout() {
   await authStore.logout()
   router.push('/login')
 }
-
-// 滚动监听
-function handleScroll() {
-  scrolled.value = window.scrollY > 10
-}
-
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll, { passive: true })
-  handleScroll()
-})
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
 </script>
 
 <style scoped>
 .app-navigation {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(8px);
-}
-
-.app-navigation--scrolled {
-  background-color: rgba(var(--v-theme-surface), 0.95) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: sticky !important;
+  top: 0;
+  z-index: 100;
+  background: rgba(var(--v-theme-surface), 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--color-outline);
 }
 
 .app-navigation__logo {
@@ -242,11 +225,6 @@ onUnmounted(() => {
   margin: 8px 16px;
   border-color: var(--color-outline-variant);
   opacity: 0.6;
-}
-
-/* 深色主题调整 */
-[data-theme="dark"] .app-navigation--scrolled {
-  background-color: rgba(30, 41, 59, 0.95) !important;
 }
 
 /* 响应式调整 */
