@@ -311,8 +311,8 @@ async function createChapter() {
 }
 
 // 跳转到创作页面
-function goToCreate(chapterId) {
-  router.push(`/create/${route.params.id}/${chapterId}`)
+function goToCreate(chapter) {
+  router.push(`/create/${route.params.id}/${chapter.id}`)
 }
 
 // 打开预览
@@ -569,7 +569,8 @@ onMounted(() => {
 
 .comic-detail__dialog-actions {
   padding: 16px 24px;
-  border-top: 1px solid var(--color-outline);
+  border-top: 1px solid var(--color-outline-variant);
+  background: linear-gradient(180deg, var(--color-surface-variant) 0%, var(--color-surface) 100%);
 }
 
 .comic-detail__novel-content {

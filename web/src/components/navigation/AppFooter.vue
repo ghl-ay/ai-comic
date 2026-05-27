@@ -61,9 +61,20 @@ const footerClasses = computed(() => ({
 <style scoped>
 .app-footer {
   background-color: var(--color-surface);
-  border-top: 1px solid var(--color-outline);
+  border-top: 1px solid var(--color-outline-variant);
   padding: 24px 0;
   margin-top: auto;
+  position: relative;
+}
+
+.app-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-outline), transparent);
 }
 
 .app-footer--fixed {
@@ -75,7 +86,7 @@ const footerClasses = computed(() => ({
 }
 
 .app-footer--bordered {
-  border-top: 1px solid var(--color-outline);
+  border-top: 1px solid var(--color-outline-variant);
 }
 
 .app-footer__content {

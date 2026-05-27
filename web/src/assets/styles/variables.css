@@ -358,6 +358,59 @@ a:hover {
   border-radius: var(--border-radius-sm);
 }
 
+/* ==================== 分割线样式 ==================== */
+
+hr,
+.v-divider {
+  border-color: var(--color-outline);
+  opacity: 0.6;
+}
+
+.v-divider--vertical {
+  border-left: 1px solid var(--color-outline);
+  border-top: none;
+  height: auto;
+  width: 1px;
+  opacity: 0.4;
+}
+
+/* 装饰性分割线 */
+.divider-decorative {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-outline), transparent);
+  margin: 24px 0;
+}
+
+.divider-decorative::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+}
+
+/* 渐变分割线 */
+.divider-gradient {
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-accent));
+  border: none;
+  margin: 16px 0;
+  border-radius: 1px;
+}
+
+/* 细分割线 */
+.divider-thin {
+  height: 1px;
+  background: var(--color-outline-variant);
+  border: none;
+  margin: 12px 0;
+}
+
 /* ==================== 工具类 ==================== */
 
 /* 文本截断 */

@@ -367,7 +367,8 @@ onMounted(() => {
 
 .comics-page__dialog-actions {
   padding: 16px 24px;
-  border-top: 1px solid var(--color-outline);
+  border-top: 1px solid var(--color-outline-variant);
+  background: linear-gradient(180deg, var(--color-surface-variant) 0%, var(--color-surface) 100%);
 }
 
 /* 响应式调整 */

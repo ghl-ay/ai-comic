@@ -26,7 +26,7 @@
       </v-btn>
     </v-card-title>
     
-    <v-divider />
+    <div class="chapter-list__divider" />
     
     <v-card-text class="chapter-list__content">
       <div v-if="chapters.length > 0" class="chapter-list__items">
@@ -189,6 +189,12 @@ function getStatusText(status) {
   text-transform: none;
   font-weight: 500;
   border-radius: var(--border-radius-md);
+}
+
+.chapter-list__divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-outline), transparent);
+  margin: 0 24px;
 }
 
 .chapter-list__content {

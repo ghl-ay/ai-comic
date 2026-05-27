@@ -76,7 +76,7 @@
         </div>
       </div>
       
-      <v-divider class="my-4" />
+      <div class="comic-info__divider" />
       
       <div class="comic-info__actions">
         <v-btn
@@ -270,6 +270,12 @@ function formatDate(dateStr) {
   text-transform: none;
   font-weight: 500;
   flex-shrink: 0;
+}
+
+.comic-info__divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-outline), transparent);
+  margin: 16px 0;
 }
 
 .comic-info__actions {

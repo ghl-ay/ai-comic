@@ -222,6 +222,12 @@ onUnmounted(() => {
   min-width: 200px;
 }
 
+.app-navigation__user-menu :deep(.v-divider) {
+  margin: 4px 0;
+  border-color: var(--color-outline-variant);
+  opacity: 0.6;
+}
+
 .app-navigation__drawer-item {
   border-radius: var(--border-radius-md);
   margin-bottom: 4px;
@@ -229,6 +235,13 @@ onUnmounted(() => {
 
 .app-navigation__drawer-item:hover {
   background-color: var(--color-state-hover);
+}
+
+/* 抽屉菜单分割线样式 */
+:deep(.v-navigation-drawer .v-divider) {
+  margin: 8px 16px;
+  border-color: var(--color-outline-variant);
+  opacity: 0.6;
 }
 
 /* 深色主题调整 */
