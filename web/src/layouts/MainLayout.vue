@@ -41,12 +41,14 @@ const transitionName = computed(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--color-background);
 }
 
 .main-layout__content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding-top: 0 !important;
 }
 
 /* 确保 router-view 占满空间 */

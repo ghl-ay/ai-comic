@@ -1,27 +1,28 @@
 <!-- web/src/views/Characters.vue -->
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <div class="d-flex justify-space-between align-center mb-4">
-          <div class="d-flex align-center">
-            <v-btn
-              variant="text"
-              @click="$router.back()"
-              class="mr-2"
-            >
-              <v-icon left>mdi-arrow-left</v-icon>
-              返回
+  <div class="characters-page">
+    <v-container>
+      <v-row>
+        <v-col cols="12">
+          <div class="d-flex justify-space-between align-center mb-4">
+            <div class="d-flex align-center">
+              <v-btn
+                variant="text"
+                @click="$router.back()"
+                class="mr-2"
+              >
+                <v-icon left>mdi-arrow-left</v-icon>
+                返回
+              </v-btn>
+              <h1>角色库</h1>
+            </div>
+            <v-btn color="primary" @click="openCreateDialog">
+              <v-icon left>mdi-plus</v-icon>
+              创建角色
             </v-btn>
-            <h1>角色库</h1>
           </div>
-          <v-btn color="primary" @click="openCreateDialog">
-            <v-icon left>mdi-plus</v-icon>
-            创建角色
-          </v-btn>
-        </div>
-      </v-col>
-    </v-row>
+        </v-col>
+      </v-row>
 
     <!-- 角色列表 -->
     <v-row v-if="characters.length > 0">
@@ -169,6 +170,7 @@
       </v-card>
     </v-dialog>
   </v-container>
+  </div>
 </template>
 
 <script setup>
@@ -309,6 +311,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.characters-page {
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
 .card-fixed {
   height: 420px;
   display: flex;

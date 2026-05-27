@@ -82,6 +82,7 @@ function viewAllComics() {
 <style scoped>
 .home {
   min-height: 100vh;
+  background: var(--color-background);
 }
 
 .cta-section {
