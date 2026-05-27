@@ -107,6 +107,19 @@
               :rules="[v => !!v || '请输入角色名称']"
               required
             />
+            <div class="mb-4">
+              <v-btn
+                variant="text"
+                size="small"
+                color="primary"
+                :loading="aiLoading"
+                :disabled="!form.name.trim()"
+                @click="generateWithAi"
+              >
+                <v-icon left size="small">mdi-auto-fix</v-icon>
+                AI 一键生成
+              </v-btn>
+            </div>
             <v-textarea
               v-model="form.description"
               label="角色描述"
@@ -161,6 +174,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import characterApi from '../api/character'
+import { useAiFormFill } from '../composables/useAiFormFill'
+
+const { loading: aiLoading, fillForm: aiFillForm } = useAiFormFill({
+  onError: (msg) => alert('AI 生成失败：' + msg),
+})
 
 const characters = ref([])
 const dialog = ref(false)
@@ -185,6 +203,26 @@ async function loadCharacters() {
   } catch (e) {
     console.error('加载角色失败', e)
   }
+}
+
+async function generateWithAi() {
+  if (!form.value.name.trim()) return
+
+  const schema = {
+    description: '角色描述，描述角色的性格、背景故事、特点等，100-200字',
+    appearance: '外观描述，详细描述角色的外貌特征，包括发型、发色、眼睛、服装、配饰等，用于生成参考图，100-200字',
+  }
+
+  await aiFillForm({
+    schema,
+    context: `角色名称：${form.value.name}`,
+    formData: form.value,
+    fillFields: ['description', 'appearance'],
+    onFill: (data) => {
+      if (data.description) form.value.description = data.description
+      if (data.appearance) form.value.appearance = data.appearance
+    },
+  })
 }
 
 function openCreateDialog() {
