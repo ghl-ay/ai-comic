@@ -114,6 +114,30 @@ class ChapterController extends Controller {
       ctx.body = { error: err.message };
     }
   }
+
+  async generateChapterPrompt() {
+    const { ctx } = this;
+    const { id } = ctx.params;
+    const { characterIds } = ctx.request.body;
+
+    if (!characterIds || !Array.isArray(characterIds) || characterIds.length === 0) {
+      ctx.status = 400;
+      ctx.body = { error: '请选择至少一个出场角色' };
+      return;
+    }
+
+    try {
+      const result = await ctx.service.chapter.generateChapterPrompt(
+        parseInt(id),
+        ctx.state.user.id,
+        characterIds
+      );
+      ctx.body = result;
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
 }
 
 module.exports = ChapterController;

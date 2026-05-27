@@ -36,4 +36,9 @@ export default {
     const res = await api.post(`/chapters/${id}/generate-image`)
     return res.data
   },
+
+  async generatePrompt(id, data) {
+    const res = await api.post(`/chapters/${id}/generate-prompt`, data)
+    return res.data
+  },
 }

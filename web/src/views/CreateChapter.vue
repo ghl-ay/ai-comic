@@ -110,6 +110,20 @@
                       :disabled="generatingScript"
                     />
 
+                    <div class="d-flex gap-2 mt-2">
+                      <v-btn
+                        variant="text"
+                        size="small"
+                        color="primary"
+                        :loading="generatingPrompt"
+                        :disabled="selectedCharacters.length === 0"
+                        @click="generateChapterPrompt"
+                      >
+                        <v-icon left size="small">mdi-auto-fix</v-icon>
+                        AI 一键生成提示词
+                      </v-btn>
+                    </div>
+
                     <v-btn
                       color="primary"
                       class="mt-4"
@@ -295,6 +309,28 @@ function toggleCharacter(id) {
     selectedCharacters.value.push(id)
   } else {
     selectedCharacters.value.splice(index, 1)
+  }
+}
+
+const generatingPrompt = ref(false)
+
+async function generateChapterPrompt() {
+  if (selectedCharacters.value.length === 0) {
+    alert('请先选择出场角色')
+    return
+  }
+
+  generatingPrompt.value = true
+  try {
+    const res = await chapterApi.generatePrompt(route.params.chapterId, {
+      characterIds: selectedCharacters.value,
+    })
+    chapterPrompt.value = res.prompt
+  } catch (e) {
+    console.error('生成章节提示词失败', e)
+    alert('生成章节提示词失败：' + (e.response?.data?.error || e.message))
+  } finally {
+    generatingPrompt.value = false
   }
 }
 
