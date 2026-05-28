@@ -179,7 +179,8 @@ class AiTextService extends Service {
         response_format: { type: 'json_object' },
       });
 
-      const content = response.choices[0].message.content;
+      const rawContent = response.choices[0].message.content;
+      const content = AiTextService.removeThinkTags(rawContent);
       const script = AiTextService.parseScriptContent(content, layoutType);
 
       return script;
@@ -226,6 +227,7 @@ ${context}
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
+        response_format: { type: 'json_object' },
       });
 
       const rawContent = response.choices[0].message.content;

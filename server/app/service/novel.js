@@ -156,7 +156,8 @@ ${novel.content.substring(0, 3000)}`;
         response_format: { type: 'json_object' },
       });
 
-      const content = response.choices[0].message.content;
+      const rawContent = response.choices[0].message.content;
+      const content = this.removeThinkTags(rawContent);
       const result = this.parseJsonResponse(content);
 
       return {
@@ -203,7 +204,8 @@ ${novel.content.substring(0, 3000)}`;
         response_format: { type: 'json_object' },
       });
 
-      const content = response.choices[0].message.content;
+      const rawContent = response.choices[0].message.content;
+      const content = this.removeThinkTags(rawContent);
       const result = this.parseJsonResponse(content);
 
       return {
@@ -269,7 +271,8 @@ ${JSON.stringify(characters, null, 2)}`;
         response_format: { type: 'json_object' },
       });
 
-      const content = response.choices[0].message.content;
+      const rawContent = response.choices[0].message.content;
+      const content = this.removeThinkTags(rawContent);
       const result = this.parseJsonResponse(content);
 
       return {
@@ -286,6 +289,11 @@ ${JSON.stringify(characters, null, 2)}`;
       this.ctx.logger.error('AI generate chapters error:', err);
       this.ctx.throw(500, `AI 生成章节失败: ${err.message}`);
     }
+  }
+
+  removeThinkTags(content) {
+    if (typeof content !== 'string') return content;
+    return content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   }
 }
 
