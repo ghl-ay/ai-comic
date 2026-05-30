@@ -2,7 +2,7 @@
 <template>
   <section class="showcase-section">
     <v-container>
-      <div class="showcase-section__header text-center mb-12">
+      <div class="showcase-section__header text-center mb-6">
         <h2 class="showcase-section__title">精选作品</h2>
         <p class="showcase-section__subtitle">
           看看其他用户如何用AI创作出精彩的漫画作品
@@ -76,7 +76,7 @@
         </v-col>
       </v-row>
       
-      <div class="showcase-section__action text-center mt-8">
+      <div class="showcase-section__action text-center mt-4">
         <v-btn
           variant="outlined"
           color="primary"
@@ -133,16 +133,16 @@ defineEmits(['comic-click', 'view-all'])
 
 <style scoped>
 .showcase-section {
-  padding: 100px 0;
+  padding: 48px 0;
   background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-variant) 100%);
 }
 
 .showcase-section__title {
   font-family: var(--font-family-display);
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--color-on-surface);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .showcase-section__subtitle {
@@ -264,7 +264,7 @@ defineEmits(['comic-click', 'view-all'])
 /* 响应式调整 */
 @media (max-width: 960px) {
   .showcase-section {
-    padding: 60px 0;
+    padding: 36px 0;
   }
   
   .showcase-section__title {
@@ -274,7 +274,7 @@ defineEmits(['comic-click', 'view-all'])
 
 @media (max-width: 600px) {
   .showcase-section {
-    padding: 40px 0;
+    padding: 24px 0;
   }
   
   .showcase-section__title {

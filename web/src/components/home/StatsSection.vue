@@ -56,7 +56,7 @@ const stats = [
 
 <style scoped>
 .stats-section {
-  padding: 80px 0;
+  padding: 48px 0;
   background: var(--color-surface);
 }
 
@@ -108,7 +108,7 @@ const stats = [
 /* 响应式调整 */
 @media (max-width: 960px) {
   .stats-section {
-    padding: 60px 0;
+    padding: 36px 0;
   }
   
   .stat-item {
@@ -128,7 +128,7 @@ const stats = [
 
 @media (max-width: 600px) {
   .stats-section {
-    padding: 40px 0;
+    padding: 24px 0;
   }
   
   .stat-item {

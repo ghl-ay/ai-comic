@@ -87,7 +87,7 @@ defineEmits(['start', 'demo'])
 <style scoped>
 .hero-section {
   background: linear-gradient(135deg, var(--color-primary-container) 0%, var(--color-surface) 100%);
-  padding: 80px 0;
+  padding: 48px 0;
   position: relative;
   overflow: hidden;
 }
@@ -110,7 +110,7 @@ defineEmits(['start', 'demo'])
 }
 
 .min-height-screen {
-  min-height: 80vh;
+  min-height: 50vh;
 }
 
 .hero-section__content {
@@ -124,11 +124,11 @@ defineEmits(['start', 'demo'])
 .hero-section__title-main {
   display: block;
   font-family: var(--font-family-display);
-  font-size: 3.5rem;
+  font-size: 2.75rem;
   font-weight: 800;
   line-height: 1.1;
   color: var(--color-on-background);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -144,16 +144,16 @@ defineEmits(['start', 'demo'])
 }
 
 .hero-section__description {
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: var(--color-on-surface-variant);
   line-height: 1.7;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .hero-section__actions {
   display: flex;
   gap: 16px;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
 }
 
@@ -234,8 +234,8 @@ defineEmits(['start', 'demo'])
 }
 
 .hero-section__illustration-card--1 {
-  top: 20%;
-  left: 10%;
+  top: 5%;
+  left: 40%;
   animation: float 6s ease-in-out infinite;
 }
 
@@ -286,7 +286,7 @@ defineEmits(['start', 'demo'])
 /* 响应式调整 */
 @media (max-width: 960px) {
   .hero-section {
-    padding: 60px 0;
+    padding: 36px 0;
   }
   
   .hero-section__title-main {
@@ -308,7 +308,7 @@ defineEmits(['start', 'demo'])
 
 @media (max-width: 600px) {
   .hero-section {
-    padding: 40px 0;
+    padding: 24px 0;
   }
   
   .hero-section__title-main {

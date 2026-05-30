@@ -12,15 +12,6 @@
       @feature-click="handleFeatureClick"
     />
     
-    <!-- 作品展示 -->
-    <showcase-section
-      @comic-click="handleComicClick"
-      @view-all="viewAllComics"
-    />
-    
-    <!-- 数据统计 -->
-    <stats-section />
-    
     <!-- CTA区域 -->
     <section class="cta-section">
       <v-container>
@@ -50,8 +41,6 @@
 import { useRouter } from 'vue-router'
 import HeroSection from '../components/home/HeroSection.vue'
 import FeaturesSection from '../components/home/FeaturesSection.vue'
-import ShowcaseSection from '../components/home/ShowcaseSection.vue'
-import StatsSection from '../components/home/StatsSection.vue'
 
 const router = useRouter()
 
@@ -69,14 +58,6 @@ function handleFeatureClick(feature) {
   console.log('功能点击:', feature.title)
 }
 
-function handleComicClick(comic) {
-  // TODO: 实现作品详情
-  console.log('作品点击:', comic.title)
-}
-
-function viewAllComics() {
-  router.push('/comics')
-}
 </script>
 
 <style scoped>
@@ -86,7 +67,7 @@ function viewAllComics() {
 }
 
 .cta-section {
-  padding: 100px 0;
+  padding: 48px 0;
   background: linear-gradient(135deg, var(--color-primary-container) 0%, var(--color-surface) 100%);
 }
 
@@ -97,16 +78,16 @@ function viewAllComics() {
 
 .cta-section__title {
   font-family: var(--font-family-display);
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--color-on-surface);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .cta-section__subtitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: var(--color-on-surface-variant);
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   line-height: 1.6;
 }
 
@@ -127,7 +108,7 @@ function viewAllComics() {
 /* 响应式调整 */
 @media (max-width: 960px) {
   .cta-section {
-    padding: 60px 0;
+    padding: 36px 0;
   }
   
   .cta-section__title {
@@ -137,7 +118,7 @@ function viewAllComics() {
 
 @media (max-width: 600px) {
   .cta-section {
-    padding: 40px 0;
+    padding: 24px 0;
   }
   
   .cta-section__title {

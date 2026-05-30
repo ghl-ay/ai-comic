@@ -33,34 +33,48 @@
         </v-btn>
       </div>
       
-      <!-- 用户菜单 -->
-      <v-menu offset-y>
-        <template #activator="{ props }">
-          <v-btn icon v-bind="props" class="ml-2">
-            <v-avatar size="32" color="primary">
-              <v-icon color="white" size="20">mdi-account</v-icon>
-            </v-avatar>
-          </v-btn>
-        </template>
-        
-        <v-list class="app-navigation__user-menu">
-          <v-list-item @click="toggleTheme">
-            <template #prepend>
-              <v-icon>{{ isDark ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
-            </template>
-            <v-list-item-title>{{ isDark ? '浅色模式' : '深色模式' }}</v-list-item-title>
-          </v-list-item>
+      <!-- 已登录：用户菜单 -->
+      <template v-if="authStore.user">
+        <v-menu offset-y>
+          <template #activator="{ props }">
+            <v-btn icon v-bind="props" class="ml-2">
+              <v-avatar size="32" color="primary">
+                <v-icon color="white" size="20">mdi-account</v-icon>
+              </v-avatar>
+            </v-btn>
+          </template>
           
-          <v-divider />
-          
-          <v-list-item @click="logout">
-            <template #prepend>
-              <v-icon>mdi-logout</v-icon>
-            </template>
-            <v-list-item-title>退出登录</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+          <v-list class="app-navigation__user-menu">
+            <v-list-item @click="toggleTheme">
+              <template #prepend>
+                <v-icon>{{ isDark ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
+              </template>
+              <v-list-item-title>{{ isDark ? '浅色模式' : '深色模式' }}</v-list-item-title>
+            </v-list-item>
+            
+            <v-divider />
+            
+            <v-list-item @click="logout">
+              <template #prepend>
+                <v-icon>mdi-logout</v-icon>
+              </template>
+              <v-list-item-title>退出登录</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </template>
+
+      <!-- 未登录：登录按钮 -->
+      <template v-else>
+        <v-btn
+          variant="flat"
+          color="primary"
+          class="ml-2"
+          to="/login"
+        >
+          登录
+        </v-btn>
+      </template>
       
       <!-- 移动端菜单按钮 -->
       <v-btn icon class="d-md-none ml-2" @click="drawer = true">
@@ -107,11 +121,17 @@
         <v-list-item-title>{{ isDark ? '浅色模式' : '深色模式' }}</v-list-item-title>
       </v-list-item>
       
-      <v-list-item @click="logout">
+      <v-list-item v-if="authStore.user" @click="logout">
         <template #prepend>
           <v-icon>mdi-logout</v-icon>
         </template>
         <v-list-item-title>退出登录</v-list-item-title>
+      </v-list-item>
+      <v-list-item v-else to="/login" @click="drawer = false">
+        <template #prepend>
+          <v-icon>mdi-login</v-icon>
+        </template>
+        <v-list-item-title>登录</v-list-item-title>
       </v-list-item>
     </v-list>
   </v-navigation-drawer>
@@ -139,10 +159,16 @@ const isDark = computed(() => themeStore.isDark)
 // 导航项
 const navItems = computed(() => {
   const items = [
-    { path: '/comics', title: '我的漫画', icon: 'mdi-book-open-variant' },
-    { path: '/characters', title: '角色库', icon: 'mdi-account-group' },
+    { path: '/', title: '首页', icon: 'mdi-home' },
   ]
-  
+
+  if (authStore.user) {
+    items.push(
+      { path: '/comics', title: '我的漫画', icon: 'mdi-book-open-variant' },
+      { path: '/characters', title: '角色库', icon: 'mdi-account-group' },
+    )
+  }
+
   if (authStore.isAdmin) {
     items.push({ path: '/admin', title: '后台管理', icon: 'mdi-shield-account' })
   }
@@ -152,6 +178,7 @@ const navItems = computed(() => {
 
 // 判断当前路由是否激活
 function isActive(path) {
+  if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
 }
 

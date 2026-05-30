@@ -2,7 +2,7 @@
 <template>
   <section class="features-section">
     <v-container>
-      <div class="features-section__header text-center mb-12">
+      <div class="features-section__header text-center mb-6">
         <h2 class="features-section__title">核心功能</h2>
         <p class="features-section__subtitle">
           强大的AI技术，让漫画创作变得简单而有趣
@@ -79,16 +79,16 @@ defineEmits(['feature-click'])
 
 <style scoped>
 .features-section {
-  padding: 100px 0;
+  padding: 48px 0;
   background-color: var(--color-surface);
 }
 
 .features-section__title {
   font-family: var(--font-family-display);
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--color-on-surface);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .features-section__subtitle {
@@ -101,7 +101,7 @@ defineEmits(['feature-click'])
 .feature-card {
   background: var(--color-surface);
   border-radius: var(--border-radius-xl);
-  padding: 32px 24px;
+  padding: 24px 20px;
   height: 100%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid var(--color-outline);
@@ -115,13 +115,13 @@ defineEmits(['feature-click'])
 }
 
 .feature-card__icon {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--border-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   transition: transform 0.3s ease;
 }
 
@@ -141,7 +141,7 @@ defineEmits(['feature-click'])
   font-size: 0.9375rem;
   color: var(--color-on-surface-variant);
   line-height: 1.6;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .feature-card__action {
@@ -161,7 +161,7 @@ defineEmits(['feature-click'])
 /* 响应式调整 */
 @media (max-width: 960px) {
   .features-section {
-    padding: 60px 0;
+    padding: 36px 0;
   }
   
   .features-section__title {
@@ -171,7 +171,7 @@ defineEmits(['feature-click'])
 
 @media (max-width: 600px) {
   .features-section {
-    padding: 40px 0;
+    padding: 24px 0;
   }
   
   .features-section__title {

@@ -17,7 +17,7 @@ const routes = [
         path: '',
         name: 'Home',
         component: () => import('../views/Home.vue'),
-        meta: { transition: 'fade' },
+        meta: { public: true, transition: 'fade' },
       },
       {
         path: 'comics',
@@ -96,7 +96,7 @@ router.beforeEach(async (to, from, next) => {
 
   // 已登录用户不能访问登录页
   if (to.meta.public && authStore.user && to.path === '/login') {
-    return next('/comics')
+    return next('/')
   }
 
   // 管理员页面需要管理员权限
