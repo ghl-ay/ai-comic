@@ -225,7 +225,7 @@ async function logout() {
 
 .app-navigation__nav-item--active {
   color: var(--color-primary) !important;
-  background-color: var(--color-primary-container);
+  background-color: rgba(99, 102, 241, 0.12);
 }
 
 .app-navigation__user-menu {
