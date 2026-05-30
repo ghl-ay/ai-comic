@@ -24,6 +24,7 @@
           v-for="item in navItems"
           :key="item.path"
           :to="item.path"
+          exact
           variant="text"
           class="mx-1 app-navigation__nav-item"
           :class="{ 'app-navigation__nav-item--active': isActive(item.path) }"
