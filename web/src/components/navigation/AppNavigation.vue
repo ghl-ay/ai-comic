@@ -223,16 +223,6 @@ async function logout() {
   background-color: var(--color-state-hover);
 }
 
-.app-navigation__nav-item.v-btn--active {
-  background-color: transparent !important;
-}
-
-.app-navigation__nav-item.v-btn--active .v-btn__overlay,
-.app-navigation__nav-item.v-btn--active .v-btn__underlay {
-  opacity: 0 !important;
-  background-color: transparent !important;
-}
-
 .app-navigation__nav-item--active {
   color: var(--color-primary) !important;
   background-color: var(--color-primary-container);
