@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS comics (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   title VARCHAR(200) NOT NULL,
+  type VARCHAR(20) DEFAULT 'normal',
   style_prompt TEXT,
   cover_image VARCHAR(255),
   status VARCHAR(20) DEFAULT 'draft',
