@@ -44,6 +44,14 @@ module.exports = app => {
   router.post('/api/novels/:id/generate-chapters', app.middleware.jwt(), controller.novel.generateChapters);
   router.get('/api/novels/by-comic/:comicId', app.middleware.jwt(), controller.novel.showByComicId);
 
+  // 短篇漫画相关（需要登录）
+  router.get('/api/short-comic/:id', app.middleware.jwt(), controller.shortComic.get);
+  router.post('/api/short-comic', app.middleware.jwt(), controller.shortComic.create);
+  router.put('/api/short-comic/:id', app.middleware.jwt(), controller.shortComic.update);
+  router.post('/api/short-comic/optimize-prompt', app.middleware.jwt(), controller.shortComic.optimizePrompt);
+  router.post('/api/short-comic/generate-script', app.middleware.jwt(), controller.shortComic.generateScript);
+  router.post('/api/short-comic/generate-image', app.middleware.jwt(), controller.shortComic.generateImage);
+
   // AI 配置相关（读取需要登录，修改需要管理员权限）
   router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);
   router.put('/api/ai-config/text', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateText);
