@@ -337,6 +337,10 @@ class DbService extends Service {
       fields.push('title = ?');
       values.push(data.title);
     }
+    if (data.type !== undefined) {
+      fields.push('type = ?');
+      values.push(data.type);
+    }
     if (data.style_prompt !== undefined) {
       fields.push('style_prompt = ?');
       values.push(data.style_prompt);
@@ -384,6 +388,13 @@ class DbService extends Service {
       'SELECT * FROM chapters WHERE comic_id = ? ORDER BY chapter_number ASC'
     );
     return stmt.all(comicId);
+  }
+
+  findChapterByComicId(comicId) {
+    const stmt = this.db.prepare(
+      'SELECT * FROM chapters WHERE comic_id = ? ORDER BY chapter_number LIMIT 1'
+    );
+    return stmt.get(comicId);
   }
 
   findChapterById(id) {
