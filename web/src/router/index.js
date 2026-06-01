@@ -44,6 +44,18 @@ const routes = [
         meta: { transition: 'slide-left' },
       },
       {
+        path: 'short-comic/create',
+        name: 'CreateShortComic',
+        component: () => import('../views/CreateShortComic.vue'),
+        meta: { transition: 'slide-up' },
+      },
+      {
+        path: 'short-comic/:id/edit',
+        name: 'EditShortComic',
+        component: () => import('../views/CreateShortComic.vue'),
+        meta: { transition: 'slide-left' },
+      },
+      {
         path: 'characters',
         name: 'Characters',
         component: () => import('../views/Characters.vue'),
