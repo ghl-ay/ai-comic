@@ -42,7 +42,16 @@
       
       <div class="comic-card__badges">
         <v-chip
-          v-if="comic.chapterCount"
+          v-if="comic.type === 'short'"
+          size="small"
+          color="orange"
+          variant="flat"
+          class="comic-card__badge"
+        >
+          短篇
+        </v-chip>
+        <v-chip
+          v-if="comic.chapterCount && comic.type !== 'short'"
           size="small"
           color="primary"
           variant="flat"

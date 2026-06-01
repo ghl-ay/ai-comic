@@ -20,6 +20,17 @@
                 <v-icon left>mdi-plus</v-icon>
                 创建新漫画
               </v-btn>
+
+              <v-btn
+                variant="outlined"
+                color="secondary"
+                size="large"
+                class="comics-page__short-btn"
+                to="/short-comic/create"
+              >
+                <v-icon left>mdi-lightning-bolt</v-icon>
+                创建短篇漫画
+              </v-btn>
               
               <v-btn
                 variant="outlined"
@@ -310,7 +321,12 @@ async function createComic() {
 
 // 跳转到漫画详情
 function goToComic(id) {
-  router.push(`/comics/${id}`)
+  const comic = comics.value.find(c => c.id === id)
+  if (comic?.type === 'short') {
+    router.push(`/short-comic/${id}/edit`)
+  } else {
+    router.push(`/comics/${id}`)
+  }
 }
 
 // 预览漫画
