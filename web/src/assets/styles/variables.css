@@ -367,11 +367,6 @@ hr,
 }
 
 .v-divider--vertical {
-  border-left: 1px solid var(--color-outline);
-  border-top: none;
-  height: auto;
-  width: 1px;
-  opacity: 0.4;
 }
 
 /* 装饰性分割线 */
