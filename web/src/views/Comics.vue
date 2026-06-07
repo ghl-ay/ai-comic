@@ -128,13 +128,9 @@
               </v-btn>
             </div>
             
-            <v-textarea
+            <StylePresetSelector
               v-model="createForm.stylePrompt"
-              label="风格提示词（可选）"
-              hint="如：日系黑白漫画、彩色卡通风格等"
-              rows="3"
-              variant="outlined"
-              class="mb-4"
+              :show-ai="false"
             />
           </v-form>
         </v-card-text>
@@ -190,6 +186,7 @@ import comicApi from '../api/comic'
 import ComicCard from '../components/business/ComicCard.vue'
 import FilterToolbar from '../components/business/FilterToolbar.vue'
 import EmptyState from '../components/business/EmptyState.vue'
+import StylePresetSelector from '../components/style/StylePresetSelector.vue'
 import { useAiFormFill } from '../composables/useAiFormFill'
 
 const { loading: aiLoading, fillForm: aiFillForm } = useAiFormFill({

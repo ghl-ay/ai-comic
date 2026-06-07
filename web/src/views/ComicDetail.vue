@@ -136,18 +136,44 @@
         </v-dialog>
         
         <!-- 编辑风格对话框 -->
-        <v-dialog v-model="styleDialog" max-width="500">
+        <v-dialog 
+          v-model="styleDialog" 
+          max-width="800"
+          :fullscreen="$vuetify.display.smAndDown"
+        >
           <v-card class="comic-detail__dialog">
             <v-card-title class="comic-detail__dialog-title">
               编辑风格提示词
             </v-card-title>
             
             <v-card-text class="comic-detail__dialog-content">
+              <div class="mb-4">
+                <v-btn
+                  variant="outlined"
+                  prepend-icon="mdi-palette"
+                  @click="showPresetSelector = !showPresetSelector"
+                >
+                  从预设选择
+                </v-btn>
+              </div>
+              
+              <v-expand-transition>
+                <div v-show="showPresetSelector" class="mb-4">
+                  <StylePresetSelector
+                    v-model="editStyleValue"
+                    :show-ai="false"
+                    :show-actions="true"
+                    @confirm="showPresetSelector = false"
+                    @cancel="showPresetSelector = false"
+                  />
+                </div>
+              </v-expand-transition>
+              
               <v-textarea
                 v-model="editStyleValue"
                 label="风格提示词"
                 hint="如：日系黑白漫画、彩色卡通风格等"
-                rows="15"
+                rows="8"
                 auto-grow
                 variant="outlined"
               />
@@ -214,6 +240,7 @@ import chapterApi from '../api/chapter'
 import ComicPreview from '../components/ComicPreview.vue'
 import ComicInfo from '../components/business/ComicInfo.vue'
 import ChapterList from '../components/business/ChapterList.vue'
+import StylePresetSelector from '../components/style/StylePresetSelector.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -236,6 +263,7 @@ const titleInput = ref(null)
 const styleDialog = ref(false)
 const editStyleValue = ref('')
 const savingStyle = ref(false)
+const showPresetSelector = ref(false)
 const novelDialog = ref(false)
 const novelContent = ref('')
 const novelTitle = ref('')

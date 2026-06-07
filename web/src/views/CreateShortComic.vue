@@ -52,11 +52,9 @@
                     label="分镜布局"
                     class="mb-4"
                   />
-                  <v-select
-                    v-model="formData.style"
-                    :items="styleOptions"
-                    label="漫画风格"
-                    class="mb-4"
+                  <StylePresetSelector
+                    v-model="formData.stylePrompt"
+                    :show-ai="false"
                   />
                 </v-card-text>
               </v-card>
@@ -129,7 +127,7 @@
                   <div class="mb-4">
                     <div class="text-body-1">标题：{{ formData.title }}</div>
                     <div class="text-body-1">布局：{{ getLayoutName(formData.layout) }}</div>
-                    <div class="text-body-1">风格：{{ getStyleName(formData.style) }}</div>
+                    <div class="text-body-1">风格：{{ formData.stylePrompt || '未选择' }}</div>
                   </div>
                   <v-btn
                     color="primary"
@@ -181,6 +179,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
+import StylePresetSelector from '../components/style/StylePresetSelector.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -210,7 +209,7 @@ const saving = ref(false)
 const formData = ref({
   title: '',
   layout: '4',
-  style: '彩色漫画',
+  stylePrompt: '',
   description: '',
   script: ''
 })
@@ -221,19 +220,8 @@ const layoutOptions = [
   { title: '8 格', value: '8' }
 ]
 
-const styleOptions = [
-  { title: '彩色漫画', value: '彩色漫画' },
-  { title: '黑白漫画', value: '黑白漫画' },
-  { title: '水彩风格', value: '水彩风格' },
-  { title: '像素风格', value: '像素风格' }
-]
-
 function getLayoutName(value) {
   return layoutOptions.find(i => i.value === value)?.title || value
-}
-
-function getStyleName(value) {
-  return styleOptions.find(i => i.value === value)?.title || value
 }
 
 async function handleNext() {
@@ -262,7 +250,7 @@ async function saveComic() {
     const res = await axios.post('/api/short-comic', {
       title: formData.value.title,
       layout: formData.value.layout,
-      style: formData.value.style,
+      stylePrompt: formData.value.stylePrompt,
       description: formData.value.description
     })
     // 保存 ID 并更新 URL 为编辑模式，不触发页面刷新
@@ -280,7 +268,7 @@ async function updateComicConfig() {
     await axios.put(`/api/short-comic/${comicId.value}`, {
       title: formData.value.title,
       layout: formData.value.layout,
-      style: formData.value.style,
+      stylePrompt: formData.value.stylePrompt,
       description: formData.value.description
     })
   } catch (e) {
@@ -350,7 +338,7 @@ async function generateImage() {
     const res = await axios.post('/api/short-comic/generate-image', {
       comicId: comicId.value,
       script: formData.value.script,
-      style: formData.value.style,
+      stylePrompt: formData.value.stylePrompt,
       layout: formData.value.layout
     })
     imageUrl.value = res.data.data.imageUrl
@@ -368,7 +356,7 @@ async function handleComplete() {
       await axios.put(`/api/short-comic/${comicId.value}`, {
         title: formData.value.title,
         layout: formData.value.layout,
-        style: formData.value.style,
+        stylePrompt: formData.value.stylePrompt,
         description: formData.value.description,
         script: formData.value.script
       })
@@ -387,7 +375,7 @@ onMounted(async () => {
       formData.value = {
         title: data.title || '',
         layout: String(data.layout_type || '4'),
-        style: data.style_prompt || '彩色漫画',
+        stylePrompt: data.style_prompt || '',
         description: data.chapter_prompt || '',
         script: data.script_content || ''
       }
