@@ -21,6 +21,10 @@
               <v-icon left>mdi-cog</v-icon>
               AI 配置
             </v-tab>
+            <v-tab to="/admin/style-presets">
+              <v-icon left>mdi-palette</v-icon>
+              风格预设
+            </v-tab>
             <v-tab to="/admin/users">
               <v-icon left>mdi-account-group</v-icon>
               用户管理

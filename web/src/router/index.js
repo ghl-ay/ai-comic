@@ -81,6 +81,11 @@ const routes = [
             name: 'AdminUsers',
             component: () => import('../views/admin/Users.vue'),
           },
+          {
+            path: 'style-presets',
+            name: 'AdminStylePresets',
+            component: () => import('../views/admin/StylePresets.vue'),
+          },
         ],
       },
     ],
