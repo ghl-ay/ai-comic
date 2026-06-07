@@ -10,6 +10,9 @@ module.exports = app => {
   // 需要登录的接口
   router.get('/api/auth/me', app.middleware.jwt(), controller.auth.me);
 
+  // 风格预设相关
+  require('./router/stylePreset')(app);
+
   // 角色相关（需要登录）
   router.get('/api/characters', app.middleware.jwt(), controller.character.index);
   router.post('/api/characters', app.middleware.jwt(), controller.character.create);
