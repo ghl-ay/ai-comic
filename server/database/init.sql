@@ -92,6 +92,21 @@ CREATE TABLE IF NOT EXISTS novels (
   FOREIGN KEY (comic_id) REFERENCES comics(id) ON DELETE SET NULL
 );
 
+-- 风格预设表
+CREATE TABLE IF NOT EXISTS style_presets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code VARCHAR(50) NOT NULL UNIQUE,
+  name VARCHAR(100) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  style_prompt TEXT NOT NULL,
+  description TEXT,
+  cover_image VARCHAR(255),
+  sort_order INTEGER DEFAULT 0,
+  is_enabled INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 索引
 CREATE INDEX IF NOT EXISTS idx_characters_user ON characters(user_id);
 CREATE INDEX IF NOT EXISTS idx_comics_user ON comics(user_id);
@@ -99,3 +114,5 @@ CREATE INDEX IF NOT EXISTS idx_chapters_comic ON chapters(comic_id);
 CREATE INDEX IF NOT EXISTS idx_ai_configs_user ON ai_configs(user_id);
 CREATE INDEX IF NOT EXISTS idx_novels_user ON novels(user_id);
 CREATE INDEX IF NOT EXISTS idx_novels_comic ON novels(comic_id);
+CREATE INDEX IF NOT EXISTS idx_style_presets_category ON style_presets(category);
+CREATE INDEX IF NOT EXISTS idx_style_presets_enabled ON style_presets(is_enabled);

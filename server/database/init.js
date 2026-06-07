@@ -21,4 +21,8 @@ db.pragma('foreign_keys = ON');
 const initSql = fs.readFileSync(sqlPath, 'utf-8');
 db.exec(initSql);
 
+// 执行种子数据初始化
+const { seedStylePresets } = require('./seeds/style_presets');
+seedStylePresets(db);
+
 module.exports = db;
