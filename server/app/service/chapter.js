@@ -181,9 +181,10 @@ class ChapterService extends Service {
     }
 
     // 调用 AI 图片服务
+    const defaultStylePrompt = await this.ctx.service.stylePreset.getDefaultStylePrompt();
     const result = await this.ctx.service.aiImage.generateComicPage({
       comicTitle: comic.title,
-      stylePrompt: comic.style_prompt || '日系黑白漫画',
+      stylePrompt: comic.style_prompt || defaultStylePrompt,
       layoutType: chapter.layout_type,
       chapterPrompt: chapter.chapter_prompt || '',
       script,

@@ -43,7 +43,13 @@ class ShortComicController extends Controller {
   async create() {
     const { ctx } = this;
     const userId = ctx.state.user.id;
-    const { title, layout, style, description, script } = ctx.request.body;
+    let { title, layout, style, stylePrompt, description, script } = ctx.request.body;
+    
+    // 兼容处理：优先使用 stylePrompt，style 作为降级
+    const finalStylePrompt = stylePrompt || style;
+    if (style && !stylePrompt) {
+      ctx.logger.warn('[DEPRECATED] short-comic API: use stylePrompt instead of style');
+    }
 
     if (!title || !title.trim()) {
       ctx.status = 400;
@@ -53,7 +59,7 @@ class ShortComicController extends Controller {
 
     try {
       // 创建 comic
-      const comicId = await ctx.service.db.createComic(userId, title.trim(), style);
+      const comicId = await ctx.service.db.createComic(userId, title.trim(), finalStylePrompt);
       await ctx.service.db.updateComic(comicId, userId, { type: 'short' });
 
       // 创建 chapter
@@ -80,7 +86,13 @@ class ShortComicController extends Controller {
     const { ctx } = this;
     const { id } = ctx.params;
     const userId = ctx.state.user.id;
-    const { title, layout, style, description, script } = ctx.request.body;
+    let { title, layout, style, stylePrompt, description, script } = ctx.request.body;
+    
+    // 兼容处理：优先使用 stylePrompt，style 作为降级
+    const finalStylePrompt = stylePrompt || style;
+    if (style && !stylePrompt) {
+      ctx.logger.warn('[DEPRECATED] short-comic API: use stylePrompt instead of style');
+    }
 
     const comic = await ctx.service.db.findComicByIdAndUserId(parseInt(id), userId);
 
@@ -94,7 +106,7 @@ class ShortComicController extends Controller {
       // 更新 comic
       const updateComicData = {};
       if (title !== undefined) updateComicData.title = title;
-      if (style !== undefined) updateComicData.style_prompt = style;
+      if (finalStylePrompt !== undefined) updateComicData.style_prompt = finalStylePrompt;
       await ctx.service.db.updateComic(parseInt(id), userId, updateComicData);
 
       // 更新 chapter
@@ -231,8 +243,14 @@ class ShortComicController extends Controller {
 
   async generateImage() {
     const { ctx } = this;
-    const { comicId, script, style, layout } = ctx.request.body;
+    let { comicId, script, style, stylePrompt, layout } = ctx.request.body;
     const userId = ctx.state.user.id;
+    
+    // 兼容处理：优先使用 stylePrompt，style 作为降级
+    const finalStylePrompt = stylePrompt || style;
+    if (style && !stylePrompt) {
+      ctx.logger.warn('[DEPRECATED] short-comic API: use stylePrompt instead of style');
+    }
 
     if (!comicId) {
       ctx.status = 400;
@@ -260,7 +278,8 @@ class ShortComicController extends Controller {
       const provider = createImageProvider(config.apiFormat, config);
 
       const layoutType = parseInt(layout) || 4;
-      const stylePrompt = style || '彩色漫画';
+      const defaultStylePrompt = await ctx.service.stylePreset.getDefaultStylePrompt();
+      const usedStylePrompt = finalStylePrompt || defaultStylePrompt;
 
       // 获取章节提示词
       const chapter = await ctx.service.db.findChapterByComicId(comic.id);
@@ -289,7 +308,7 @@ class ShortComicController extends Controller {
 
       const prompt = BaseImageProvider.buildComicPagePrompt({
         comicTitle: comic.title,
-        stylePrompt,
+        stylePrompt: usedStylePrompt,
         layoutType,
         chapterPrompt,
         script: parsedScript,

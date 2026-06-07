@@ -159,10 +159,12 @@ ${novel.content.substring(0, 3000)}`;
       const rawContent = response.choices[0].message.content;
       const content = this.removeThinkTags(rawContent);
       const result = this.parseJsonResponse(content);
+      
+      const defaultStylePrompt = await this.ctx.service.stylePreset.getDefaultStylePrompt();
 
       return {
         title: result.title || novel.title || '未命名漫画',
-        stylePrompt: result.stylePrompt || '日系黑白漫画风格',
+        stylePrompt: result.stylePrompt || defaultStylePrompt,
       };
     } catch (err) {
       this.ctx.logger.error('AI analyze style error:', err);
