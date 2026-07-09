@@ -31,19 +31,19 @@
 ## 📸 项目截图
 
 <p align="center">
-  <img src="screenshots/首页.png" alt="首页" width="45%">
-  <img src="screenshots/我的漫画.png" alt="我的漫画" width="45%">
+  <img src="screenshots/home.png" alt="Home" width="45%">
+  <img src="screenshots/my-comics.png" alt="My Comics" width="45%">
 </p>
 <p align="center">
-  <img src="screenshots/漫画分镜脚本.png" alt="漫画分镜脚本" width="45%">
-  <img src="screenshots/漫画预览.png" alt="漫画预览" width="45%">
+  <img src="screenshots/storyboard.png" alt="Storyboard" width="45%">
+  <img src="screenshots/preview.png" alt="Preview" width="45%">
 </p>
 <p align="center">
-  <img src="screenshots/角色库.png" alt="角色库" width="45%">
-  <img src="screenshots/后台管理.png" alt="后台管理" width="45%">
+  <img src="screenshots/characters.png" alt="Characters" width="45%">
+  <img src="screenshots/admin.png" alt="Admin" width="45%">
 </p>
 <p align="center">
-  <img src="screenshots/漫画管理页面.png" alt="漫画管理页面" width="45%">
+  <img src="screenshots/comic-detail.png" alt="Comic Detail" width="45%">
 </p>
 
 ## 环境要求
