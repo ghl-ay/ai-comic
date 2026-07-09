@@ -1,8 +1,24 @@
-# AI 漫画创作平台
+<div align="center">
+  <h1>AI 漫画创作平台</h1>
+  <p>AI 驱动的漫画创作工具，支持连载漫画自动生成、角色库管理、分镜脚本生成</p>
+  <p>
+    <a href="#-功能特性">功能特性</a> •
+    <a href="#-快速开始">快速开始</a> •
+    <a href="#-项目截图">截图</a> •
+    <a href="#-技术栈">技术栈</a> •
+    <a href="#-项目结构">项目结构</a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/Vue_3-4FC08D?logo=vuedotjs&logoColor=fff" alt="Vue 3">
+    <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff" alt="Vite">
+    <img src="https://img.shields.io/badge/Vuetify-1867C0?logo=vuetify&logoColor=fff" alt="Vuetify">
+    <img src="https://img.shields.io/badge/Egg.js-009688?logo=egg&logoColor=fff" alt="Egg.js">
+    <img src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=fff" alt="SQLite">
+    <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
+  </p>
+</div>
 
-AI 驱动的漫画创作工具，支持连载漫画自动生成。
-
-## 功能特性
+## ✨ 功能特性
 
 - **AI 内容生成**: 自动生成分镜脚本和漫画图像
 - **角色库管理**: 维护角色设定，保证画面一致性
@@ -12,23 +28,23 @@ AI 驱动的漫画创作工具，支持连载漫画自动生成。
 - **多存储支持**: 本地存储、腾讯云 COS、咸鱼云存储
 - **后台管理**: 管理员可配置 AI 模型和存储方案
 
-## 截图预览
+## 📸 项目截图
 
-| 登录页面 | 漫画列表 |
-|:---:|:---:|
-| ![登录](screenshots/login.png) | ![漫画列表](screenshots/list.png) |
-
-| 角色管理 | 漫画详情 |
-|:---:|:---:|
-| ![角色管理](screenshots/role.png) | ![漫画详情](screenshots/comics.png) |
-
-| 分镜脚本 | 漫画预览 |
-|:---:|:---:|
-| ![分镜脚本](screenshots/Storyboard.png) | ![漫画预览](screenshots/Preview.png) |
-
-| 后台管理 |
-|:---:|
-| ![后台管理](screenshots/manage.png) |
+<p align="center">
+  <img src="screenshots/首页.png" alt="首页" width="45%">
+  <img src="screenshots/我的漫画.png" alt="我的漫画" width="45%">
+</p>
+<p align="center">
+  <img src="screenshots/漫画分镜脚本.png" alt="漫画分镜脚本" width="45%">
+  <img src="screenshots/漫画预览.png" alt="漫画预览" width="45%">
+</p>
+<p align="center">
+  <img src="screenshots/角色库.png" alt="角色库" width="45%">
+  <img src="screenshots/后台管理.png" alt="后台管理" width="45%">
+</p>
+<p align="center">
+  <img src="screenshots/漫画管理页面.png" alt="漫画管理页面" width="45%">
+</p>
 
 ## 环境要求
 
@@ -92,21 +108,6 @@ ai-print/
 └── docs/                   # 设计文档
 ```
 
-## API 概览
-
-| 模块 | 接口 | 说明 |
-|------|------|------|
-| 认证 | POST /api/auth/register | 用户注册 |
-| 认证 | POST /api/auth/login | 用户登录 |
-| 认证 | POST /api/auth/logout | 用户登出 |
-| 角色 | CRUD /api/characters | 角色管理 |
-| 漫画 | CRUD /api/comics | 漫画管理 |
-| 章节 | CRUD /api/chapters | 章节管理 |
-| AI | POST /api/chapters/:id/generate-script | 生成分镜脚本 |
-| AI | POST /api/chapters/:id/generate-images | 生成漫画图片 |
-| 配置 | GET/POST /api/admin/ai-config | AI 模型配置 |
-| 存储 | GET/POST /api/admin/storage | 存储配置 |
-
 ## 生产部署
 
 ### 环境变量（必须设置）
@@ -152,4 +153,4 @@ npm stop    # 停止服务
 
 ## 许可证
 
-MIT
+[MIT](LICENSE)
