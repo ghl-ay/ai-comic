@@ -5,7 +5,8 @@
     "start": "egg-scripts start --daemon --title=ai-comic-server",
     "stop": "egg-scripts stop --title=ai-comic-server",
     "dev": "egg-bin dev",
-    "test": "egg-bin test"
+    "test": "egg-bin test",
+    "migrate:oidc": "node database/migrate-oidc.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -16,7 +17,8 @@
     "egg-scripts": "^2.17.0",
     "form-data": "^4.0.5",
     "jsonwebtoken": "^9.0.2",
-    "openai": "^4.0.0"
+    "openai": "^4.0.0",
+    "openid-client": "^5.7.1"
   },
   "devDependencies": {
     "egg-bin": "^6.6.0"

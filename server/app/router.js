@@ -7,6 +7,14 @@ module.exports = app => {
   router.post('/api/auth/login', controller.auth.login);
   router.post('/api/auth/logout', controller.auth.logout);
 
+  // OIDC（无需业务登录；bind/register 依赖 oidc_pending Cookie）
+  router.get('/api/auth/oidc/status', controller.auth.oidcStatus);
+  router.get('/api/auth/oidc/login', controller.auth.oidcLogin);
+  router.get('/api/auth/oidc/callback', controller.auth.oidcCallback);
+  router.get('/api/auth/oidc/pending', controller.auth.oidcPending);
+  router.post('/api/auth/oidc/bind', controller.auth.oidcBind);
+  router.post('/api/auth/oidc/register', controller.auth.oidcRegister);
+
   // 需要登录的接口
   router.get('/api/auth/me', app.middleware.jwt(), controller.auth.me);
 
@@ -67,6 +75,8 @@ module.exports = app => {
   // 管理员接口（需要管理员权限）
   router.get('/api/admin/users', app.middleware.jwt(), app.middleware.admin(), controller.admin.getUsers);
   router.put('/api/admin/users/:id/admin', app.middleware.jwt(), app.middleware.admin(), controller.admin.setUserAdmin);
+  router.post('/api/admin/users/:id/oidc/unbind', app.middleware.jwt(), app.middleware.admin(), controller.admin.unbindUserOidc);
+  router.post('/api/admin/oidc/test', app.middleware.jwt(), app.middleware.admin(), controller.admin.testOidc);
 
   // AI 辅助功能（需要登录）
   router.post('/api/ai-assist/fill-form', app.middleware.jwt(), controller.aiAssist.fillForm);

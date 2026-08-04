@@ -81,6 +81,23 @@
                       <v-icon left>mdi-login</v-icon>
                       登录
                     </v-btn>
+
+                    <template v-if="oidcStatus.enabled">
+                      <div class="login-form__divider">
+                        <span>或</span>
+                      </div>
+                      <v-btn
+                        block
+                        size="large"
+                        variant="outlined"
+                        class="login-form__oidc"
+                        :loading="oidcStarting"
+                        @click="handleOidcLogin"
+                      >
+                        <v-icon left>mdi-shield-key-outline</v-icon>
+                        {{ oidcStatus.displayName }}
+                      </v-btn>
+                    </template>
                   </v-form>
                 </v-window-item>
 
@@ -155,6 +172,15 @@
 
             <!-- 底部信息 -->
             <div class="login-card__footer">
+              <v-alert
+                v-if="oidcError"
+                type="error"
+                variant="tonal"
+                density="compact"
+                class="mb-3 text-left"
+              >
+                {{ oidcError }}
+              </v-alert>
               <p class="login-card__footer-text">
                 开始创作你的AI漫画作品
               </p>
@@ -167,16 +193,37 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import authApi from '../api/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const tab = ref('login')
 const loginForm = ref({ username: '', password: '' })
 const registerForm = ref({ username: '', password: '', confirmPassword: '' })
+const oidcStatus = ref({ enabled: false, displayName: '第三方登录' })
+const oidcStarting = ref(false)
+const oidcError = ref('')
+
+/** 后端只回传短码，前端映射固定文案（详情仅服务端日志） */
+const OIDC_ERROR_MESSAGES = {
+  not_enabled: '第三方登录未启用或配置不完整',
+  login_failed: '无法发起第三方登录，请稍后重试',
+  callback_failed: '第三方登录失败，请重试',
+  state_invalid: '登录状态已失效，请重新发起第三方登录',
+  access_denied: '你已取消第三方授权',
+  identity_failed: '无法确认第三方身份，请重试或联系管理员',
+  pending_expired: '第三方登录会话已过期，请重新授权',
+}
+
+function resolveOidcErrorMessage(code) {
+  if (!code) return ''
+  return OIDC_ERROR_MESSAGES[code] || '第三方登录失败，请重试'
+}
 
 async function handleLogin() {
   const success = await authStore.login(
@@ -200,6 +247,22 @@ async function handleRegister() {
     router.push('/comics')
   }
 }
+
+function handleOidcLogin() {
+  oidcStarting.value = true
+  authApi.startOidcLogin('/comics')
+}
+
+onMounted(async () => {
+  if (route.query.oidc_error) {
+    oidcError.value = resolveOidcErrorMessage(String(route.query.oidc_error))
+  }
+  try {
+    oidcStatus.value = await authApi.getOidcStatus()
+  } catch (error) {
+    oidcStatus.value = { enabled: false, displayName: '第三方登录' }
+  }
+})
 </script>
 
 <style scoped>
@@ -348,6 +411,37 @@ async function handleRegister() {
 .login-form__submit:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.login-form__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: var(--color-on-surface-variant);
+  font-size: 0.8125rem;
+}
+
+.login-form__divider::before,
+.login-form__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-outline);
+}
+
+.login-form__oidc {
+  font-weight: 600;
+  text-transform: none;
+  border-radius: var(--border-radius-lg);
+  height: 48px;
+  border-color: var(--color-outline) !important;
+  letter-spacing: 0.01em;
+}
+
+.login-form__oidc:hover {
+  border-color: var(--color-primary) !important;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .login-card__footer {

@@ -10,6 +10,12 @@ const routes = [
     meta: { public: true, transition: 'fade' },
   },
   {
+    path: '/login/oidc-setup',
+    name: 'OidcSetup',
+    component: () => import('../views/OidcSetup.vue'),
+    meta: { public: true, transition: 'fade' },
+  },
+  {
     path: '/',
     component: () => import('../layouts/MainLayout.vue'),
     children: [
@@ -82,6 +88,11 @@ const routes = [
             component: () => import('../views/admin/Users.vue'),
           },
           {
+            path: 'oidc-config',
+            name: 'AdminOidcConfig',
+            component: () => import('../views/admin/OidcConfig.vue'),
+          },
+          {
             path: 'style-presets',
             name: 'AdminStylePresets',
             component: () => import('../views/admin/StylePresets.vue'),
@@ -111,7 +122,7 @@ router.beforeEach(async (to, from, next) => {
     return next('/login')
   }
 
-  // 已登录用户不能访问登录页
+  // 已登录用户不能访问登录页（OIDC 决策页除外：一般无业务 Cookie）
   if (to.meta.public && authStore.user && to.path === '/login') {
     return next('/')
   }

@@ -29,6 +29,10 @@
               <v-icon left>mdi-account-group</v-icon>
               用户管理
             </v-tab>
+            <v-tab to="/admin/oidc-config">
+              <v-icon left>mdi-shield-key</v-icon>
+              OIDC 配置
+            </v-tab>
           </v-tabs>
 
           <router-view />

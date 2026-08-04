@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(50) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   is_admin INTEGER DEFAULT 0,
+  oidc_sub TEXT,
+  oidc_issuer TEXT,
+  display_name TEXT,
+  avatar_url TEXT,
+  auth_provider TEXT DEFAULT 'local',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -108,6 +113,9 @@ CREATE TABLE IF NOT EXISTS style_presets (
 );
 
 -- 索引
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oidc
+  ON users(oidc_issuer, oidc_sub)
+  WHERE oidc_sub IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_characters_user ON characters(user_id);
 CREATE INDEX IF NOT EXISTS idx_comics_user ON comics(user_id);
 CREATE INDEX IF NOT EXISTS idx_chapters_comic ON chapters(comic_id);

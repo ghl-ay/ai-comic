@@ -34,9 +34,16 @@ class DbService extends Service {
 
   findUserById(id) {
     const stmt = this.db.prepare(
-      'SELECT id, username, is_admin, created_at FROM users WHERE id = ?'
+      'SELECT id, username, is_admin, created_at, oidc_sub, oidc_issuer, auth_provider, display_name, avatar_url FROM users WHERE id = ?'
     );
     return stmt.get(id);
+  }
+
+  findUserByOidc(issuer, sub) {
+    const stmt = this.db.prepare(
+      'SELECT id, username, is_admin, created_at, oidc_sub, oidc_issuer, auth_provider, display_name, avatar_url FROM users WHERE oidc_issuer = ? AND oidc_sub = ?'
+    );
+    return stmt.get(issuer, sub);
   }
 
   countUsers() {
@@ -53,10 +60,99 @@ class DbService extends Service {
     return result.changes > 0;
   }
 
-  findAllUsers() {
-    const stmt = this.db.prepare(
-      'SELECT id, username, is_admin, created_at FROM users ORDER BY created_at DESC'
+  /**
+   * 绑定 OIDC 身份到本地用户
+   * @returns {{ ok: true } | { ok: false, reason: string }}
+   */
+  bindUserOidc(userId, issuer, sub, profile = {}) {
+    const user = this.db.prepare('SELECT id, oidc_sub, oidc_issuer FROM users WHERE id = ?').get(userId);
+    if (!user) {
+      return { ok: false, reason: 'user_not_found' };
+    }
+    if (user.oidc_sub) {
+      return { ok: false, reason: 'already_bound' };
+    }
+
+    const existing = this.findUserByOidc(issuer, sub);
+    if (existing && existing.id !== userId) {
+      return { ok: false, reason: 'sub_taken' };
+    }
+
+    const stmt = this.db.prepare(`
+      UPDATE users SET
+        oidc_sub = ?,
+        oidc_issuer = ?,
+        display_name = COALESCE(?, display_name),
+        avatar_url = COALESCE(?, avatar_url),
+        auth_provider = 'both'
+      WHERE id = ? AND oidc_sub IS NULL
+    `);
+    const result = stmt.run(
+      sub,
+      issuer,
+      profile.displayName || null,
+      profile.avatarUrl || null,
+      userId
     );
+    if (result.changes === 0) {
+      return { ok: false, reason: 'already_bound' };
+    }
+    return { ok: true };
+  }
+
+  /**
+   * 同事务：创建用户 + 绑定 OIDC。任一步失败则整单回滚。
+   * @returns {{ ok: true, userId: number } | { ok: false, reason: string }}
+   */
+  createUserAndBindOidc(username, hashedPassword, issuer, sub, profile = {}) {
+    const run = this.db.transaction(() => {
+      const existingSub = this.findUserByOidc(issuer, sub);
+      if (existingSub) {
+        return { ok: false, reason: 'sub_taken' };
+      }
+
+      const userId = this.createUserWithAdminCheck(username, hashedPassword);
+      const bindResult = this.bindUserOidc(userId, issuer, sub, profile);
+      if (!bindResult.ok) {
+        // 抛错触发 better-sqlite3 事务回滚，避免孤儿用户
+        const rollbackError = new Error(bindResult.reason || 'bind_failed');
+        rollbackError.bindReason = bindResult.reason || 'bind_failed';
+        throw rollbackError;
+      }
+      return { ok: true, userId };
+    });
+
+    try {
+      return run();
+    } catch (error) {
+      if (error.bindReason) {
+        return { ok: false, reason: error.bindReason };
+      }
+      throw error;
+    }
+  }
+
+  unbindUserOidc(userId) {
+    const stmt = this.db.prepare(`
+      UPDATE users SET
+        oidc_sub = NULL,
+        oidc_issuer = NULL,
+        display_name = NULL,
+        avatar_url = NULL,
+        auth_provider = 'local'
+      WHERE id = ?
+    `);
+    const result = stmt.run(userId);
+    return result.changes > 0;
+  }
+
+  findAllUsers() {
+    const stmt = this.db.prepare(`
+      SELECT id, username, is_admin, created_at,
+             oidc_sub, oidc_issuer, auth_provider, display_name
+      FROM users
+      ORDER BY created_at DESC
+    `);
     return stmt.all();
   }
 

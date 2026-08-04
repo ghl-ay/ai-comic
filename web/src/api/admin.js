@@ -16,4 +16,14 @@ export default {
     const res = await api.put(`/admin/users/${userId}/admin`, { is_admin: isAdmin })
     return res.data
   },
+
+  async unbindUserOidc(userId) {
+    const res = await api.post(`/admin/users/${userId}/oidc/unbind`)
+    return res.data
+  },
+
+  async testOidc(draft = {}) {
+    const res = await api.post('/admin/oidc/test', draft)
+    return res.data
+  },
 }
