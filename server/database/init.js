@@ -3,7 +3,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const dbPath = path.join(__dirname, '../database/comic.db');
+const dbPath = process.env.DB_PATH || path.join(__dirname, '../database/comic.db');
 const sqlPath = path.join(__dirname, 'init.sql');
 
 // 确保目录存在

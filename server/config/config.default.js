@@ -7,6 +7,10 @@ exports.security = {
   },
 };
 
+exports.static = {
+  prefix: '/',
+};
+
 exports.jwt = {
   secret: process.env.JWT_SECRET || 'CHANGE-ME-IN-PRODUCTION',
   expiresIn: '7d',
@@ -28,7 +32,7 @@ exports.tencentCos = {
 };
 
 exports.database = {
-  path: './database/comic.db',
+  path: process.env.DB_PATH || './database/comic.db',
 };
 
 // 角色参考图存储目录

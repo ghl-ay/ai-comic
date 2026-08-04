@@ -76,4 +76,7 @@ module.exports = app => {
 
   // 图片访问（通过 Cookie 认证，需要登录）
   router.get('/images/:type/:filename', app.middleware.jwt(), controller.images.showAuth);
+
+  // SPA fallback（history 路由刷新兜底，需最后注册）
+  router.get('/(.*)', controller.home.fallback);
 };
