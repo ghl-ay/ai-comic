@@ -41,3 +41,6 @@ exports.characterImageDir = 'public/images/characters';
 // 漫画图片存储目录
 exports.comicImageDir = 'public/images/comics';
 
+// 风格预设示例图存储目录
+exports.styleImageDir = 'public/images/styles';
+

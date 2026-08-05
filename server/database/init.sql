@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS comics (
   title VARCHAR(200) NOT NULL,
   type VARCHAR(20) DEFAULT 'normal',
   style_prompt TEXT,
+  style_preset_id INTEGER,
   cover_image VARCHAR(255),
   status VARCHAR(20) DEFAULT 'draft',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

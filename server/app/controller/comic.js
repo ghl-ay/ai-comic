@@ -17,7 +17,7 @@ class ComicController extends Controller {
 
   async create() {
     const { ctx } = this;
-    const { title, stylePrompt } = ctx.request.body;
+    const { title, stylePrompt, stylePresetId } = ctx.request.body;
 
     if (!title || !title.trim()) {
       ctx.status = 400;
@@ -29,7 +29,8 @@ class ComicController extends Controller {
       const comic = await ctx.service.comic.createComic(
         ctx.state.user.id,
         title,
-        stylePrompt
+        stylePrompt,
+        stylePresetId
       );
       ctx.status = 201;
       ctx.body = { comic };
@@ -42,13 +43,16 @@ class ComicController extends Controller {
   async update() {
     const { ctx } = this;
     const { id } = ctx.params;
-    const { title, stylePrompt, status } = ctx.request.body;
+    const { title, stylePrompt, stylePresetId, status } = ctx.request.body;
 
     try {
       const updateData = {};
       if (title !== undefined) updateData.title = title;
-      if (stylePrompt !== undefined) updateData.style_prompt = stylePrompt;
       if (status !== undefined) updateData.status = status;
+      if (stylePrompt !== undefined) updateData.style_prompt = stylePrompt;
+      if (Object.prototype.hasOwnProperty.call(ctx.request.body, 'stylePresetId')) {
+        updateData.style_preset_id = stylePresetId;
+      }
 
       const comic = await ctx.service.comic.updateComic(
         parseInt(id),
@@ -87,7 +91,6 @@ class ComicController extends Controller {
     }
 
     try {
-      // 验证漫画归属
       const comic = await ctx.service.db.findComicByIdAndUserId(
         parseInt(comicId),
         ctx.state.user.id
@@ -99,7 +102,6 @@ class ComicController extends Controller {
         return;
       }
 
-      // 批量创建章节
       const createdChapters = [];
       for (const ch of chapters) {
         const chapterId = await ctx.service.db.createChapter(
@@ -109,7 +111,6 @@ class ComicController extends Controller {
           ch.layoutType
         );
 
-        // 更新章节的 prompt 和角色
         await ctx.service.db.updateChapter(chapterId, {
           chapter_prompt: ch.chapterPrompt,
           character_ids: JSON.stringify(ch.characterIds || []),
@@ -119,7 +120,6 @@ class ComicController extends Controller {
         createdChapters.push(chapter);
       }
 
-      // 关联小说
       if (novelId) {
         await ctx.service.db.updateNovel(novelId, ctx.state.user.id, {
           comic_id: parseInt(comicId),

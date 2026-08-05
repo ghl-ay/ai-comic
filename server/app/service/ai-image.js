@@ -6,6 +6,7 @@ const { createImageProtocol } = require('../ai/registry');
 const { downloadImage } = require('../ai/utils/download');
 const { buildComicPagePrompt } = require('../ai/prompt/comic-page');
 const { buildCharacterReferencePrompt } = require('../ai/prompt/character-reference');
+const { buildStyleCoverPrompt } = require('../ai/prompt/style-cover');
 
 class AiImageService extends Service {
   async getProtocol(providerId = null) {
@@ -58,10 +59,58 @@ class AiImageService extends Service {
     }
   }
 
-  collectReferences({ characterReferences = [], previousChapter = null }) {
+  /**
+   * 生成风格预设示例图（无角色环境示意，固定文件名覆盖）
+   */
+  async generateStyleCover(params) {
+    const { code, stylePrompt, providerId = null } = params;
+    if (!code || !stylePrompt) {
+      this.ctx.throw(400, '生成风格示例图需要 code 与 stylePrompt');
+    }
+
+    const { protocol } = await this.getProtocol(providerId);
+    const prompt = buildStyleCoverPrompt(stylePrompt);
+
+    try {
+      const result = await protocol.generate({ prompt, size: '1024x1024' });
+      const imageBuffer = await this.materializeResult(result);
+
+      const styleImageDir = this.app.config.styleImageDir || 'public/images/styles';
+      if (!fs.existsSync(styleImageDir)) {
+        fs.mkdirSync(styleImageDir, { recursive: true });
+      }
+
+      const filename = `${code}.png`;
+      const filepath = path.join(styleImageDir, filename);
+      fs.writeFileSync(filepath, imageBuffer);
+
+      return {
+        imagePath: `/images/styles/${filename}`,
+        localPath: filepath,
+        prompt,
+      };
+    } catch (err) {
+      if (err.status) throw err;
+      this.ctx.logger.error('Style cover generation error:', err);
+      this.ctx.throw(500, `风格示例图生成失败: ${err.message}`);
+    }
+  }
+
+  /**
+   * 参考图顺序：风格示例 → 角色 → 上一章
+   */
+  collectReferences({
+    characterReferences = [],
+    previousChapter = null,
+    styleCoverLocalPath = null,
+  }) {
     const references = [];
     const characterImageDir = this.app.config.characterImageDir || 'public/images/characters';
     const comicImageDir = this.app.config.comicImageDir || 'public/images/comics';
+
+    if (styleCoverLocalPath && fs.existsSync(styleCoverLocalPath)) {
+      references.push({ type: 'path', path: styleCoverLocalPath });
+    }
 
     for (const character of characterReferences) {
       if (!character.imageUrl) continue;
@@ -90,8 +139,11 @@ class AiImageService extends Service {
       script,
       characterReferences,
       previousChapter,
+      styleCoverLocalPath = null,
       providerId = null,
     } = params;
+
+    const hasStyleCover = !!(styleCoverLocalPath && fs.existsSync(styleCoverLocalPath));
 
     const { protocol } = await this.getProtocol(providerId);
     const prompt = buildComicPagePrompt({
@@ -102,10 +154,15 @@ class AiImageService extends Service {
       script,
       characterReferences,
       previousChapter,
+      hasStyleCover,
     });
 
     try {
-      const references = this.collectReferences({ characterReferences, previousChapter });
+      const references = this.collectReferences({
+        characterReferences,
+        previousChapter,
+        styleCoverLocalPath: hasStyleCover ? styleCoverLocalPath : null,
+      });
       const result = await protocol.generate({ prompt, references });
       const imageBuffer = await this.materializeResult(result);
 

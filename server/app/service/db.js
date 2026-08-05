@@ -293,11 +293,16 @@ class DbService extends Service {
   }
 
   // 漫画相关
-  createComic(userId, title, stylePrompt) {
+  createComic(userId, title, stylePrompt, stylePresetId = null) {
     const stmt = this.db.prepare(
-      'INSERT INTO comics (user_id, title, style_prompt) VALUES (?, ?, ?)'
+      'INSERT INTO comics (user_id, title, style_prompt, style_preset_id) VALUES (?, ?, ?, ?)'
     );
-    const result = stmt.run(userId, title, stylePrompt || null);
+    const result = stmt.run(
+      userId,
+      title,
+      stylePrompt || null,
+      stylePresetId !== undefined && stylePresetId !== null ? stylePresetId : null
+    );
     return result.lastInsertRowid;
   }
 
@@ -337,6 +342,10 @@ class DbService extends Service {
     if (data.style_prompt !== undefined) {
       fields.push('style_prompt = ?');
       values.push(data.style_prompt);
+    }
+    if (data.style_preset_id !== undefined) {
+      fields.push('style_preset_id = ?');
+      values.push(data.style_preset_id);
     }
     if (data.cover_image !== undefined) {
       fields.push('cover_image = ?');

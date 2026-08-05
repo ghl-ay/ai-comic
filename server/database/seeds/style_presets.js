@@ -1,174 +1,167 @@
 // server/database/seeds/style_presets.js
+
+/** 核心 8 风格（唯一数据源，迁移与 seed 共用） */
 const seedData = [
-  // 日系漫画
   {
     code: 'jp_monochrome',
     name: '日漫黑白',
-    category: '日系漫画',
-    style_prompt: '日系黑白漫画风格，精细线稿，网点纸阴影，高对比度黑白画面',
+    category: '日系',
+    style_prompt:
+      '日系黑白漫画风格，精细墨线线稿，网点纸与阴影排线，高对比黑白画面，分镜感强，不要彩色，不要照片写实',
     description: '经典日本漫画风格，适合少年向、热血题材',
-    sort_order: 1
+    sort_order: 1,
+    cover_image: '/images/styles/jp_monochrome.png',
   },
   {
     code: 'jp_color',
-    name: '日漫彩漫',
-    category: '日系漫画',
-    style_prompt: '日系彩漫风格，鲜艳色彩，精细上色，动漫质感',
+    name: '日漫全彩',
+    category: '日系',
+    style_prompt:
+      '日系全彩漫画风格，清晰线稿，赛璐璐或精细平涂上色，鲜明色彩与动漫光影，画面干净精致，不要写实照片质感',
     description: '全彩日漫风格，色彩丰富，画面精美',
-    sort_order: 2
+    sort_order: 2,
+    cover_image: '/images/styles/jp_color.png',
   },
   {
     code: 'jp_shoujo',
     name: '少女漫',
-    category: '日系漫画',
-    style_prompt: '少女漫画风格，柔和线条，大眼睛角色，浪漫氛围，花朵与星光装饰',
+    category: '日系',
+    style_prompt:
+      '少女漫画风格，柔和细腻线条，大眼睛精致五官，浪漫氛围，花朵星光与速度线点缀，柔和配色，唯美情绪',
     description: '浪漫唯美的少女向风格',
-    sort_order: 3
+    sort_order: 3,
+    cover_image: '/images/styles/jp_shoujo.png',
   },
   {
     code: 'jp_chibi',
     name: 'Q版萌系',
-    category: '日系漫画',
-    style_prompt: 'Q版萌系风格，二头身比例，圆润可爱，明亮色彩',
+    category: '日系',
+    style_prompt:
+      'Q版萌系漫画风格，二头身或三头身比例，圆润可爱造型，简洁粗线，明亮饱和色彩，表情夸张，轻松欢快',
     description: '超可爱的Q版角色风格',
-    sort_order: 4
+    sort_order: 4,
+    cover_image: '/images/styles/jp_chibi.png',
   },
-  // 国风
   {
     code: 'cn_ink',
     name: '水墨国风',
     category: '国风',
-    style_prompt: '中国水墨画风格，留白意境，墨色渲染，传统笔触',
+    style_prompt:
+      '中国水墨国风漫画，墨色渲染与留白意境，书法感笔触，淡彩或纯水墨，传统山水气韵，适合武侠古风，避免西式厚涂',
     description: '传统水墨画意境，适合武侠、古风题材',
-    sort_order: 10
-  },
-  {
-    code: 'cn_painted',
-    name: '彩绘国风',
-    category: '国风',
-    style_prompt: '中国彩绘风格，工笔重彩，传统纹饰，浓烈色彩',
-    description: '工笔重彩的中国传统绘画风格',
-    sort_order: 11
+    sort_order: 10,
+    cover_image: '/images/styles/cn_ink.png',
   },
   {
     code: 'cn_xianxia',
-    name: '仙侠风',
+    name: '仙侠古风',
     category: '国风',
-    style_prompt: '仙侠风格，飘逸仙气，灵力光效，云雾缭绕',
+    style_prompt:
+      '仙侠古风漫画风格，飘逸衣袂与灵力光效，云雾山岚，清丽或绚烂仙气配色，东方奇幻氛围，精致服饰纹样',
     description: '仙侠修真题材专属风格',
-    sort_order: 12
+    sort_order: 11,
+    cover_image: '/images/styles/cn_xianxia.png',
   },
-  // 美系漫画
   {
     code: 'us_hero',
     name: '美漫英雄',
-    category: '美系漫画',
-    style_prompt: '美漫超级英雄风格，粗犷线稿，强光影对比，动态构图',
+    category: '美系',
+    style_prompt:
+      '美式超级英雄漫画风格，粗犷有力线稿，强烈明暗对比，动态夸张构图，浓烈色彩，半调网点可选，漫画书质感',
     description: '美式超级英雄漫画风格',
-    sort_order: 20
-  },
-  {
-    code: 'us_indie',
-    name: '美漫独立',
-    category: '美系漫画',
-    style_prompt: '美式独立漫画风格，简约线条，实验性构图，个性化表达',
-    description: '独立漫画风格，适合文艺、实验性作品',
-    sort_order: 21
-  },
-  // 卡通/绘本
-  {
-    code: 'cartoon_us',
-    name: '美式卡通',
-    category: '卡通/绘本',
-    style_prompt: '美式卡通风格，夸张表情，明亮色彩，圆润造型',
-    description: '经典美式动画卡通风格',
-    sort_order: 30
-  },
-  {
-    code: 'cartoon_picture',
-    name: '绘本插画',
-    category: '卡通/绘本',
-    style_prompt: '绘本插画风格，温暖柔和，手绘质感，故事感画面',
-    description: '适合儿童绘本、温馨故事',
-    sort_order: 31
-  },
-  {
-    code: 'cartoon_pixel',
-    name: '像素风',
-    category: '卡通/绘本',
-    style_prompt: '像素艺术风格，8-bit/16-bit 复古像素，块状色块',
-    description: '复古像素游戏风格',
-    sort_order: 32
-  },
-  // 写实/照片
-  {
-    code: 'realistic',
-    name: '写实漫画',
-    category: '写实/照片',
-    style_prompt: '写实漫画风格，接近真实比例，精细光影，电影级画面',
-    description: '高度写实的漫画风格',
-    sort_order: 40
+    sort_order: 20,
+    cover_image: '/images/styles/us_hero.png',
   },
   {
     code: 'realistic_cyber',
     name: '赛博朋克',
-    category: '写实/照片',
-    style_prompt: '赛博朋克风格，霓虹灯光，未来都市，科技感与颓废并存',
+    category: '特色',
+    style_prompt:
+      '赛博朋克漫画风格，霓虹灯光与未来都市，潮湿反光与全息招牌，冷暖强对比，科技与颓废并存，电影分镜感',
     description: '未来科幻赛博朋克风格',
-    sort_order: 41
+    sort_order: 30,
+    cover_image: '/images/styles/realistic_cyber.png',
   },
-  // 特色风格
-  {
-    code: 'special_gothic',
-    name: '暗黑哥特',
-    category: '特色风格',
-    style_prompt: '暗黑哥特风格，阴郁色调，尖锐造型，神秘恐怖氛围',
-    description: '哥特暗黑美学，适合恐怖、神秘题材',
-    sort_order: 50
-  },
-  {
-    code: 'special_steam',
-    name: '蒸汽朋克',
-    category: '特色风格',
-    style_prompt: '蒸汽朋克风格，齿轮机械，维多利亚美学，铜铁质感',
-    description: '蒸汽朋克复古科技风格',
-    sort_order: 51
-  },
-  {
-    code: 'special_horror',
-    name: '恐怖悬疑',
-    category: '特色风格',
-    style_prompt: '恐怖悬疑漫画风格，压抑氛围，高对比明暗，紧张构图',
-    description: '悬疑惊悚题材风格',
-    sort_order: 52
-  },
-  {
-    code: 'special_minimal',
-    name: '极简线稿',
-    category: '特色风格',
-    style_prompt: '极简线稿风格，简洁线条，大量留白，优雅干净',
-    description: '极简风格，注重线条美感',
-    sort_order: 53
-  },
-  {
-    code: 'special_watercolor',
-    name: '水彩风',
-    category: '特色风格',
-    style_prompt: '水彩画风格，晕染边缘，透明色彩，艺术感笔触',
-    description: '水彩手绘质感风格',
-    sort_order: 54
-  }
 ];
 
+const CORE_CODES = seedData.map(item => item.code);
+
+/**
+ * 幂等：确保仅有核心 8 风格，并更新文案
+ * @param {import('better-sqlite3').Database} db
+ */
+function ensureCoreStylePresets(db) {
+  const hasStylePresetId = db
+    .prepare('PRAGMA table_info(comics)')
+    .all()
+    .some(column => column.name === 'style_preset_id');
+
+  const upsert = db.prepare(`
+    INSERT INTO style_presets (code, name, category, style_prompt, description, cover_image, sort_order, is_enabled)
+    VALUES (@code, @name, @category, @style_prompt, @description, @cover_image, @sort_order, 1)
+    ON CONFLICT(code) DO UPDATE SET
+      name = excluded.name,
+      category = excluded.category,
+      style_prompt = excluded.style_prompt,
+      description = excluded.description,
+      cover_image = COALESCE(style_presets.cover_image, excluded.cover_image),
+      sort_order = excluded.sort_order,
+      is_enabled = 1,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+
+  const transaction = db.transaction(() => {
+    for (const item of seedData) {
+      upsert.run({
+        code: item.code,
+        name: item.name,
+        category: item.category,
+        style_prompt: item.style_prompt,
+        description: item.description,
+        cover_image: item.cover_image,
+        sort_order: item.sort_order,
+      });
+    }
+
+    const placeholders = CORE_CODES.map(() => '?').join(', ');
+
+    if (hasStylePresetId) {
+      db.prepare(
+        `UPDATE comics SET style_preset_id = NULL
+         WHERE style_preset_id IN (
+           SELECT id FROM style_presets WHERE code NOT IN (${placeholders})
+         )`
+      ).run(...CORE_CODES);
+    }
+
+    const deleteResult = db
+      .prepare(`DELETE FROM style_presets WHERE code NOT IN (${placeholders})`)
+      .run(...CORE_CODES);
+
+    return deleteResult.changes;
+  });
+
+  const deletedCount = transaction();
+  const remaining = db.prepare('SELECT COUNT(*) as cnt FROM style_presets').get().cnt;
+  console.log(
+    `[风格预设] ensureCore: 保留 ${remaining} 条，删除非核心 ${deletedCount} 条`
+  );
+  return { remaining, deletedCount };
+}
+
+/**
+ * 空库插入；非空库走 ensure 收敛
+ * @param {import('better-sqlite3').Database} db
+ */
 function seedStylePresets(db) {
   const count = db.prepare('SELECT COUNT(*) as cnt FROM style_presets').get();
-  
+
   if (count.cnt === 0) {
     const insert = db.prepare(`
-      INSERT INTO style_presets (code, name, category, style_prompt, description, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO style_presets (code, name, category, style_prompt, description, cover_image, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    
+
     const transaction = db.transaction(() => {
       for (const item of seedData) {
         insert.run(
@@ -177,14 +170,22 @@ function seedStylePresets(db) {
           item.category,
           item.style_prompt,
           item.description,
+          item.cover_image,
           item.sort_order
         );
       }
     });
-    
+
     transaction();
     console.log(`[数据库初始化] 已插入 ${seedData.length} 条风格预设数据`);
   }
+
+  ensureCoreStylePresets(db);
 }
 
-module.exports = { seedStylePresets, seedData };
+module.exports = {
+  seedStylePresets,
+  ensureCoreStylePresets,
+  seedData,
+  CORE_CODES,
+};

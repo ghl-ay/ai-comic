@@ -43,7 +43,7 @@ class ShortComicController extends Controller {
   async create() {
     const { ctx } = this;
     const userId = ctx.state.user.id;
-    let { title, layout, style, stylePrompt, description, script } = ctx.request.body;
+    let { title, layout, style, stylePrompt, stylePresetId, description, script } = ctx.request.body;
     
     // 兼容处理：优先使用 stylePrompt，style 作为降级
     const finalStylePrompt = stylePrompt || style;
@@ -58,8 +58,14 @@ class ShortComicController extends Controller {
     }
 
     try {
-      // 创建 comic
-      const comicId = await ctx.service.db.createComic(userId, title.trim(), finalStylePrompt);
+      // 创建 comic（支持 stylePresetId 绑定）
+      const comic = await ctx.service.comic.createComic(
+        userId,
+        title.trim(),
+        finalStylePrompt,
+        stylePresetId
+      );
+      const comicId = comic.id;
       await ctx.service.db.updateComic(comicId, userId, { type: 'short' });
 
       // 创建 chapter
@@ -86,7 +92,7 @@ class ShortComicController extends Controller {
     const { ctx } = this;
     const { id } = ctx.params;
     const userId = ctx.state.user.id;
-    let { title, layout, style, stylePrompt, description, script } = ctx.request.body;
+    let { title, layout, style, stylePrompt, stylePresetId, description, script } = ctx.request.body;
     
     // 兼容处理：优先使用 stylePrompt，style 作为降级
     const finalStylePrompt = stylePrompt || style;
@@ -103,11 +109,16 @@ class ShortComicController extends Controller {
     }
 
     try {
-      // 更新 comic
+      // 更新 comic（仅有漫画字段时再写）
       const updateComicData = {};
       if (title !== undefined) updateComicData.title = title;
       if (finalStylePrompt !== undefined) updateComicData.style_prompt = finalStylePrompt;
-      await ctx.service.db.updateComic(parseInt(id), userId, updateComicData);
+      if (Object.prototype.hasOwnProperty.call(ctx.request.body, 'stylePresetId')) {
+        updateComicData.style_preset_id = stylePresetId;
+      }
+      if (Object.keys(updateComicData).length > 0) {
+        await ctx.service.comic.updateComic(parseInt(id), userId, updateComicData);
+      }
 
       // 更新 chapter
       const chapter = await ctx.service.db.findChapterByComicId(comic.id);
@@ -229,6 +240,9 @@ class ShortComicController extends Controller {
         };
       }
 
+      const { localPath: styleCoverLocalPath } =
+        ctx.service.stylePreset.resolveStyleCoverLocalPath(comic.style_preset_id);
+
       const result = await ctx.service.aiImage.generateComicPage({
         comicTitle: comic.title,
         stylePrompt: usedStylePrompt,
@@ -237,6 +251,7 @@ class ShortComicController extends Controller {
         script: parsedScript,
         characterReferences: [],
         previousChapter: null,
+        styleCoverLocalPath,
         providerId,
       });
 

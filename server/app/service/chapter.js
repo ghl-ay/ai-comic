@@ -181,8 +181,11 @@ class ChapterService extends Service {
       }
     }
 
-    // 调用 AI 图片服务
+    // 调用 AI 图片服务（绑定预设时注入无角色画风示例图）
     const defaultStylePrompt = await this.ctx.service.stylePreset.getDefaultStylePrompt();
+    const { localPath: styleCoverLocalPath } =
+      this.ctx.service.stylePreset.resolveStyleCoverLocalPath(comic.style_preset_id);
+
     const result = await this.ctx.service.aiImage.generateComicPage({
       comicTitle: comic.title,
       stylePrompt: comic.style_prompt || defaultStylePrompt,
@@ -191,6 +194,7 @@ class ChapterService extends Service {
       script,
       characterReferences: characterRefs,
       previousChapter,
+      styleCoverLocalPath,
       providerId,
     });
 

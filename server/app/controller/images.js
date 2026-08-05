@@ -60,16 +60,21 @@ class ImagesController extends Controller {
     const { ctx } = this;
 
     // 验证 type 参数
-    if (!['characters', 'comics'].includes(type)) {
+    if (!['characters', 'comics', 'styles'].includes(type)) {
       ctx.status = 400;
       ctx.body = { error: '无效的图片类型' };
       return;
     }
 
     // 构建文件路径
-    const baseDir = type === 'characters'
-      ? (ctx.app.config.characterImageDir || 'public/images/characters')
-      : (ctx.app.config.comicImageDir || 'public/images/comics');
+    let baseDir;
+    if (type === 'characters') {
+      baseDir = ctx.app.config.characterImageDir || 'public/images/characters';
+    } else if (type === 'styles') {
+      baseDir = ctx.app.config.styleImageDir || 'public/images/styles';
+    } else {
+      baseDir = ctx.app.config.comicImageDir || 'public/images/comics';
+    }
 
     const filePath = path.join(baseDir, filename);
 
