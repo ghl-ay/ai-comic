@@ -56,16 +56,20 @@ CREATE TABLE IF NOT EXISTS chapters (
   FOREIGN KEY (comic_id) REFERENCES comics(id) ON DELETE CASCADE
 );
 
--- AI 配置表
+-- AI 提供商配置表（type=text|image 为模型提供商；type=image_storage 为历史存储配置兼容）
 CREATE TABLE IF NOT EXISTS ai_configs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER,
   type VARCHAR(20) NOT NULL,
-  provider VARCHAR(50) NOT NULL,
-  api_key VARCHAR(255) NOT NULL,
-  base_url VARCHAR(255) NOT NULL,
-  model VARCHAR(100) NOT NULL,
-  api_format VARCHAR(20) DEFAULT 'openai',
+  name TEXT,
+  protocol TEXT,
+  provider VARCHAR(50) DEFAULT '',
+  api_key TEXT NOT NULL,
+  base_url TEXT DEFAULT '',
+  model TEXT DEFAULT '',
+  enabled INTEGER NOT NULL DEFAULT 1,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  extra TEXT NOT NULL DEFAULT '{}',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

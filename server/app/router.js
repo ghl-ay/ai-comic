@@ -63,10 +63,14 @@ module.exports = app => {
   router.post('/api/short-comic/generate-script', app.middleware.jwt(), controller.shortComic.generateScript);
   router.post('/api/short-comic/generate-image', app.middleware.jwt(), controller.shortComic.generateImage);
 
-  // AI 配置相关（读取需要登录，修改需要管理员权限）
-  router.get('/api/ai-config', app.middleware.jwt(), controller.aiConfig.index);
-  router.put('/api/ai-config/text', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateText);
-  router.put('/api/ai-config/image', app.middleware.jwt(), app.middleware.admin(), controller.aiConfig.updateImage);
+  // AI 提供商（options 登录可读；CRUD 需管理员）
+  router.get('/api/ai-providers/options', app.middleware.jwt(), controller.aiProvider.options);
+  router.get('/api/ai-providers', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.index);
+  router.get('/api/ai-providers/:id', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.show);
+  router.post('/api/ai-providers', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.create);
+  router.put('/api/ai-providers/:id', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.update);
+  router.delete('/api/ai-providers/:id', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.destroy);
+  router.post('/api/ai-providers/:id/set-default', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.setDefault);
 
   // 通用配置 API（需要管理员权限）
   router.get('/api/configs/:category/:key', app.middleware.jwt(), app.middleware.admin(), controller.configs.show);
