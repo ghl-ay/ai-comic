@@ -51,12 +51,14 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
     }
   }
 
-  async function analyzeStyle() {
+  async function analyzeStyle(providerId = null) {
     if (!novelId.value) return
     loading.value = true
     error.value = ''
     try {
-      const res = await novelApi.analyzeStyle(novelId.value)
+      const payload = {}
+      if (providerId != null) payload.providerId = providerId
+      const res = await novelApi.analyzeStyle(novelId.value, payload)
       style.value = {
         title: res.title,
         stylePrompt: res.stylePrompt,
@@ -70,12 +72,14 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
     }
   }
 
-  async function extractCharacters() {
+  async function extractCharacters(providerId = null) {
     if (!novelId.value) return
     loading.value = true
     error.value = ''
     try {
-      const res = await novelApi.extractCharacters(novelId.value)
+      const payload = {}
+      if (providerId != null) payload.providerId = providerId
+      const res = await novelApi.extractCharacters(novelId.value, payload)
       characters.value = res.characters
       return res.characters
     } catch (e) {
@@ -86,7 +90,7 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
     }
   }
 
-  async function generateChapters() {
+  async function generateChapters(providerId = null) {
     if (!novelId.value) return
     loading.value = true
     error.value = ''
@@ -95,10 +99,12 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
         .filter(c => c.selected)
         .map(c => c.createdId || c.id)
 
-      const res = await novelApi.generateChapters(novelId.value, {
+      const payload = {
         style: style.value,
         characterIds,
-      })
+      }
+      if (providerId != null) payload.providerId = providerId
+      const res = await novelApi.generateChapters(novelId.value, payload)
       chapters.value = res.chapters
       return res.chapters
     } catch (e) {

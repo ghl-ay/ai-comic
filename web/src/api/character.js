@@ -32,8 +32,8 @@ export default {
     return res.data
   },
 
-  async generateReference(id) {
-    const res = await api.post(`/characters/${id}/generate-reference`)
+  async generateReference(id, data = {}) {
+    const res = await api.post(`/characters/${id}/generate-reference`, data)
     return res.data
   },
 }

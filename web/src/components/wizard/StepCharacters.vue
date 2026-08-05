@@ -11,6 +11,12 @@
         {{ store.error }}
       </v-alert>
 
+      <AiProviderSelect
+        ref="textProviderSelect"
+        type="text"
+        v-model="textProviderId"
+      />
+
       <v-row>
         <v-col
           v-for="(char, index) in localCharacters"
@@ -62,6 +68,7 @@
             variant="outlined"
             color="primary"
             :loading="store.loading"
+            :disabled="textProviderId == null"
             @click="regenerate"
           >
             <v-icon left>mdi-refresh</v-icon>
@@ -76,8 +83,11 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useNovelWizardStore } from '../../stores/novelWizard'
+import AiProviderSelect from '../business/AiProviderSelect.vue'
 
 const store = useNovelWizardStore()
+const textProviderSelect = ref(null)
+const textProviderId = ref(null)
 
 const localCharacters = ref([])
 
@@ -86,9 +96,11 @@ watch(localCharacters, (val) => {
 }, { deep: true })
 
 onMounted(async () => {
+  await textProviderSelect.value?.ensureLoaded()
   if (store.characters.length === 0 && store.novelId) {
+    if (textProviderId.value == null) return
     try {
-      await store.extractCharacters()
+      await store.extractCharacters(textProviderId.value)
       localCharacters.value = store.characters.map(c => ({
         ...c,
         selected: true,
@@ -105,8 +117,9 @@ onMounted(async () => {
 })
 
 async function regenerate() {
+  if (textProviderId.value == null) return
   try {
-    await store.extractCharacters()
+    await store.extractCharacters(textProviderId.value)
     localCharacters.value = store.characters.map(c => ({
       ...c,
       selected: true,

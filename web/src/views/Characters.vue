@@ -16,10 +16,18 @@
               </v-btn>
               <h1>角色库</h1>
             </div>
-            <v-btn color="primary" @click="openCreateDialog">
-              <v-icon left>mdi-plus</v-icon>
-              创建角色
-            </v-btn>
+            <div class="d-flex align-center ga-3">
+              <AiProviderSelect
+                type="image"
+                v-model="imageProviderId"
+                label="图片提供商"
+                class="characters-page__image-provider"
+              />
+              <v-btn color="primary" @click="openCreateDialog">
+                <v-icon left>mdi-plus</v-icon>
+                创建角色
+              </v-btn>
+            </div>
           </div>
         </v-col>
       </v-row>
@@ -70,7 +78,7 @@
               variant="text"
               @click="generateReference(character)"
               :loading="generatingId === character.id"
-              :disabled="!character.appearance"
+              :disabled="!character.appearance || imageProviderId == null"
             >
               {{ character.reference_image ? '重新生成' : '生成参考图' }}
             </v-btn>
@@ -108,13 +116,14 @@
               :rules="[v => !!v || '请输入角色名称']"
               required
             />
+            <AiProviderSelect type="text" v-model="textProviderId" />
             <div class="mb-4">
               <v-btn
                 variant="text"
                 size="small"
                 color="primary"
                 :loading="aiLoading"
-                :disabled="!form.name.trim()"
+                :disabled="!form.name.trim() || textProviderId == null"
                 @click="generateWithAi"
               >
                 <v-icon left size="small">mdi-auto-fix</v-icon>
@@ -177,10 +186,17 @@
 import { ref, onMounted } from 'vue'
 import characterApi from '../api/character'
 import { useAiFormFill } from '../composables/useAiFormFill'
+import AiProviderSelect from '../components/business/AiProviderSelect.vue'
 
-const { loading: aiLoading, fillForm: aiFillForm } = useAiFormFill({
+const {
+  loading: aiLoading,
+  fillForm: aiFillForm,
+} = useAiFormFill({
   onError: (msg) => alert('AI 生成失败：' + msg),
 })
+
+const textProviderId = ref(null)
+const imageProviderId = ref(null)
 
 const characters = ref([])
 const dialog = ref(false)
@@ -220,6 +236,7 @@ async function generateWithAi() {
     context: `角色名称：${form.value.name}`,
     formData: form.value,
     fillFields: ['description', 'appearance'],
+    providerId: textProviderId.value,
     onFill: (data) => {
       if (data.description) form.value.description = data.description
       if (data.appearance) form.value.appearance = data.appearance
@@ -290,9 +307,15 @@ async function deleteCharacter() {
 }
 
 async function generateReference(character) {
+  if (imageProviderId.value == null) {
+    alert('没有供应商可选')
+    return
+  }
   generatingId.value = character.id
   try {
-    const res = await characterApi.generateReference(character.id)
+    const res = await characterApi.generateReference(character.id, {
+      providerId: imageProviderId.value,
+    })
     const index = characters.value.findIndex(c => c.id === character.id)
     if (index !== -1) {
       characters.value[index] = res.character
@@ -338,5 +361,10 @@ onMounted(() => {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.characters-page__image-provider {
+  min-width: 200px;
+  margin: 0;
 }
 </style>

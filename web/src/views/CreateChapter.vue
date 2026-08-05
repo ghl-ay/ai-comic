@@ -102,6 +102,7 @@
                 <v-card flat>
                   <v-card-title>生成分镜脚本</v-card-title>
                   <v-card-text>
+                    <AiProviderSelect type="text" v-model="textProviderId" />
                     <v-textarea
                       v-model="chapterPrompt"
                       label="章节提示词"
@@ -116,7 +117,7 @@
                         size="small"
                         color="primary"
                         :loading="generatingPrompt"
-                        :disabled="selectedCharacters.length === 0"
+                        :disabled="selectedCharacters.length === 0 || textProviderId == null"
                         @click="generateChapterPrompt"
                       >
                         <v-icon left size="small">mdi-auto-fix</v-icon>
@@ -128,7 +129,7 @@
                       color="primary"
                       class="mt-4"
                       :loading="generatingScript"
-                      :disabled="!chapterPrompt.trim()"
+                      :disabled="!chapterPrompt.trim() || textProviderId == null"
                       @click="generateScript"
                     >
                       生成分镜脚本
@@ -179,6 +180,7 @@
                 <v-card flat>
                   <v-card-title>生成漫画图片</v-card-title>
                   <v-card-text>
+                    <AiProviderSelect type="image" v-model="imageProviderId" />
                     <div class="mb-4">
                       <div class="text-body-1">分镜布局：{{ chapter.layout_type }} 格</div>
                       <div class="text-body-1">风格：{{ chapter.comic?.style_prompt || '默认日系黑白漫画' }}</div>
@@ -187,7 +189,7 @@
                     <v-btn
                       color="primary"
                       :loading="generatingImage"
-                      :disabled="generatingImage"
+                      :disabled="generatingImage || imageProviderId == null"
                       @click="generateImage"
                     >
                       生成漫画图片
@@ -246,9 +248,23 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import chapterApi from '../api/chapter'
 import characterApi from '../api/character'
+import AiProviderSelect from '../components/business/AiProviderSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
+
+const textProviderId = ref(null)
+const imageProviderId = ref(null)
+
+function textProviderPayload() {
+  if (textProviderId.value == null) return {}
+  return { providerId: textProviderId.value }
+}
+
+function imageProviderPayload() {
+  if (imageProviderId.value == null) return {}
+  return { providerId: imageProviderId.value }
+}
 
 const loading = ref(true)
 const chapter = ref(null)
@@ -324,6 +340,7 @@ async function generateChapterPrompt() {
   try {
     const res = await chapterApi.generatePrompt(route.params.chapterId, {
       characterIds: selectedCharacters.value,
+      ...textProviderPayload(),
     })
     chapterPrompt.value = res.prompt
   } catch (e) {
@@ -340,6 +357,7 @@ async function generateScript() {
     const res = await chapterApi.generateScript(route.params.chapterId, {
       prompt: chapterPrompt.value,
       characterIds: selectedCharacters.value,
+      ...textProviderPayload(),
     })
     script.value = res.script
   } catch (e) {
@@ -353,7 +371,7 @@ async function generateScript() {
 async function generateImage() {
   generatingImage.value = true
   try {
-    await chapterApi.generateImage(route.params.chapterId)
+    await chapterApi.generateImage(route.params.chapterId, imageProviderPayload())
     // 重新加载章节获取图片
     await loadChapter()
   } catch (e) {

@@ -32,8 +32,8 @@ export default {
     return res.data
   },
 
-  async generateImage(id) {
-    const res = await api.post(`/chapters/${id}/generate-image`)
+  async generateImage(id, data = {}) {
+    const res = await api.post(`/chapters/${id}/generate-image`, data)
     return res.data
   },
 

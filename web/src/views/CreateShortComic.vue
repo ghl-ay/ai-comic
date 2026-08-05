@@ -64,6 +64,7 @@
             <v-window-item :value="2">
               <v-card flat>
                 <v-card-text>
+                  <AiProviderSelect type="text" v-model="textProviderId" />
                   <v-textarea
                     v-model="formData.description"
                     label="剧情描述"
@@ -76,6 +77,7 @@
                       variant="outlined"
                       color="primary"
                       :loading="optimizing"
+                      :disabled="textProviderId == null"
                       @click="optimizePrompt"
                       class="mr-2"
                     >
@@ -85,6 +87,7 @@
                     <v-btn
                       color="primary"
                       :loading="generatingScript"
+                      :disabled="textProviderId == null"
                       @click="generateScript"
                     >
                       生成分镜脚本
@@ -124,6 +127,7 @@
             <v-window-item :value="3">
               <v-card flat>
                 <v-card-text>
+                  <AiProviderSelect type="image" v-model="imageProviderId" />
                   <div class="mb-4">
                     <div class="text-body-1">标题：{{ formData.title }}</div>
                     <div class="text-body-1">布局：{{ getLayoutName(formData.layout) }}</div>
@@ -132,6 +136,7 @@
                   <v-btn
                     color="primary"
                     :loading="generatingImage"
+                    :disabled="imageProviderId == null"
                     @click="generateImage"
                   >
                     生成漫画图片
@@ -180,9 +185,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import StylePresetSelector from '../components/style/StylePresetSelector.vue'
+import AiProviderSelect from '../components/business/AiProviderSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
+
+const textProviderId = ref(null)
+const imageProviderId = ref(null)
+
+function textProviderPayload() {
+  if (textProviderId.value == null) return {}
+  return { providerId: textProviderId.value }
+}
+
+function imageProviderPayload() {
+  if (imageProviderId.value == null) return {}
+  return { providerId: imageProviderId.value }
+}
 
 const savedComicId = ref(null)
 const comicId = computed(() => route.params.id || savedComicId.value)
@@ -283,7 +302,8 @@ async function optimizePrompt() {
   optimizing.value = true
   try {
     const res = await axios.post('/api/short-comic/optimize-prompt', {
-      description: formData.value.description
+      description: formData.value.description,
+      ...textProviderPayload(),
     })
     formData.value.description = res.data.data.optimizedPrompt
     
@@ -309,7 +329,8 @@ async function generateScript() {
   try {
     const res = await axios.post('/api/short-comic/generate-script', {
       prompt: formData.value.description,
-      layout: formData.value.layout
+      layout: formData.value.layout,
+      ...textProviderPayload(),
     })
     formData.value.script = res.data.data.script
     
@@ -339,7 +360,8 @@ async function generateImage() {
       comicId: comicId.value,
       script: formData.value.script,
       stylePrompt: formData.value.stylePrompt,
-      layout: formData.value.layout
+      layout: formData.value.layout,
+      ...imageProviderPayload(),
     })
     imageUrl.value = res.data.data.imageUrl
   } catch (e) {

@@ -1,167 +1,222 @@
 <!-- web/src/views/admin/AiConfig.vue -->
 <template>
-  <v-row>
-    <!-- 文本模型配置 -->
-    <v-col cols="12" md="6">
-      <v-card>
-        <v-card-title>文本模型</v-card-title>
-        <v-card-text>
-          <v-form @submit.prevent="saveTextConfig">
-            <v-text-field
-              v-model="textForm.provider"
-              label="供应商名称"
-              hint="如: openai, deepseek"
-            />
-            <v-text-field
-              v-model="textForm.baseUrl"
-              label="API 地址"
-              hint="如: https://api.openai.com"
-            />
-            <v-text-field
-              v-model="textForm.model"
-              label="模型名称"
-              hint="如: gpt-4o, deepseek-chat"
-            />
-            <v-text-field
-              v-model="textForm.apiKey"
-              label="API Key"
-              type="password"
-              hint="您的 API 密钥将安全存储"
-            />
-            <v-btn
-              color="primary"
-              type="submit"
-              :loading="textSaving"
-            >
-              保存文本模型配置
-            </v-btn>
-          </v-form>
-        </v-card-text>
-      </v-card>
-    </v-col>
+  <div class="ai-admin">
+    <header class="ai-admin__header">
+      <div>
+        <h2 class="ai-admin__title">AI 提供商</h2>
+        <p class="ai-admin__subtitle">
+          管理多个文本 / 图片模型接入。
+        </p>
+      </div>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">
+        添加提供商
+      </v-btn>
+    </header>
 
-    <!-- 图片模型配置 -->
-    <v-col cols="12" md="6">
-      <v-card>
-        <v-card-title>图片模型</v-card-title>
-        <v-card-text>
-          <v-form @submit.prevent="saveImageConfig">
-            <v-select
-              v-model="imageForm.apiFormat"
-              :items="apiFormatOptions"
-              label="API 格式"
-              hint="选择图片生成服务的 API 格式"
-            />
-            <v-text-field
-              v-model="imageForm.provider"
-              label="供应商名称"
-              hint="如: openai"
-            />
-            <v-text-field
-              v-model="imageForm.baseUrl"
-              label="API 地址"
-              hint="如: https://api.openai.com"
-            />
-            <v-text-field
-              v-model="imageForm.model"
-              label="模型名称"
-              hint="如: dall-e-3"
-            />
-            <v-text-field
-              v-model="imageForm.apiKey"
-              label="API Key"
-              type="password"
-              hint="您的 API 密钥将安全存储"
-            />
-            <v-btn
-              color="primary"
-              type="submit"
-              :loading="imageSaving"
+    <v-tabs v-model="activeTab" color="primary" density="comfortable" class="ai-admin__tabs">
+      <v-tab value="text">文本提供商</v-tab>
+      <v-tab value="image">图片提供商</v-tab>
+    </v-tabs>
+
+    <v-card class="ai-admin__table-card mt-4" variant="outlined">
+      <v-data-table
+        :headers="headers"
+        :items="currentItems"
+        :loading="loading"
+        :items-per-page="20"
+        :no-data-text="emptyText"
+      >
+        <template #item.protocol="{ item }">
+          {{ protocolLabel(item.protocol) }}
+        </template>
+        <template #item.status="{ item }">
+          <div class="d-flex ga-2 flex-wrap">
+            <v-chip v-if="item.isDefault" size="small" color="primary" variant="flat">
+              默认
+            </v-chip>
+            <v-chip
+              size="small"
+              :color="item.enabled ? 'success' : 'default'"
+              variant="tonal"
             >
-              保存图片模型配置
+              {{ item.enabled ? '启用' : '禁用' }}
+            </v-chip>
+          </div>
+        </template>
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end ga-1">
+            <v-btn
+              v-if="!item.isDefault && item.enabled"
+              size="small"
+              variant="text"
+              @click="onSetDefault(item)"
+            >
+              设默认
             </v-btn>
-          </v-form>
-        </v-card-text>
-      </v-card>
-    </v-col>
-  </v-row>
+            <v-btn size="small" variant="text" @click="openEdit(item)">
+              编辑
+            </v-btn>
+            <v-btn size="small" variant="text" color="error" @click="confirmRemove(item)">
+              删除
+            </v-btn>
+          </div>
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <AiProviderFormDialog
+      v-model="dialogOpen"
+      :provider-id="editingId"
+      :initial-type="activeTab"
+      :protocols="protocols"
+      :provider="editingProvider"
+      :saving="saving"
+      @submit="onDialogSubmit"
+    />
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import aiConfigApi from '../../api/ai-config'
+import { computed, onMounted, ref } from 'vue'
+import aiProviderApi from '../../api/ai-provider'
+import AiProviderFormDialog from '../../components/business/AiProviderFormDialog.vue'
 
-const textSaving = ref(false)
-const imageSaving = ref(false)
+const activeTab = ref('text')
+const loading = ref(false)
+const saving = ref(false)
+const providers = ref([])
+const protocols = ref({ text: ['openai', 'anthropic'], image: ['openai', 'grok'] })
 
-const apiFormatOptions = [
-  { title: 'OpenAI', value: 'openai' },
-  { title: 'GRS AI', value: 'grsai' },
+const dialogOpen = ref(false)
+const editingId = ref(null)
+const editingProvider = ref(null)
+
+const headers = [
+  { title: '名称', key: 'name' },
+  { title: '协议', key: 'protocol' },
+  { title: '模型', key: 'model' },
+  { title: 'Base URL', key: 'baseUrl' },
+  { title: '状态', key: 'status', sortable: false },
+  { title: '操作', key: 'actions', sortable: false, align: 'end' },
 ]
 
-const textForm = ref({
-  provider: '',
-  baseUrl: '',
-  model: '',
-  apiKey: '',
-})
+const currentItems = computed(() =>
+  providers.value.filter(item => item.type === activeTab.value)
+)
 
-const imageForm = ref({
-  provider: '',
-  baseUrl: '',
-  model: '',
-  apiKey: '',
-  apiFormat: 'openai',
-})
+const emptyText = computed(() =>
+  activeTab.value === 'text'
+    ? '还没有文本提供商，点击右上角添加'
+    : '还没有图片提供商，点击右上角添加'
+)
 
-async function loadConfigs() {
-  try {
-    const res = await aiConfigApi.getConfigs()
-    const textConfig = res.configs.find(c => c.type === 'text')
-    const imageConfig = res.configs.find(c => c.type === 'image')
-
-    if (textConfig) {
-      textForm.value.provider = textConfig.provider || ''
-      textForm.value.baseUrl = textConfig.baseUrl || ''
-      textForm.value.model = textConfig.model || ''
-    }
-
-    if (imageConfig) {
-      imageForm.value.provider = imageConfig.provider || ''
-      imageForm.value.baseUrl = imageConfig.baseUrl || ''
-      imageForm.value.model = imageConfig.model || ''
-      imageForm.value.apiFormat = imageConfig.apiFormat || 'openai'
-    }
-  } catch (e) {
-    console.error('加载配置失败', e)
+function protocolLabel(protocol) {
+  const labels = {
+    openai: 'OpenAI 兼容',
+    anthropic: 'Anthropic',
+    grok: 'Grok（sub2api）',
   }
+  return labels[protocol] || protocol
 }
 
-async function saveTextConfig() {
-  textSaving.value = true
+async function load() {
+  loading.value = true
   try {
-    await aiConfigApi.saveTextConfig(textForm.value)
-    alert('文本模型配置已保存')
-  } catch (e) {
-    alert('保存失败：' + (e.response?.data?.error || e.message))
+    const res = await aiProviderApi.list()
+    providers.value = res.providers || []
+    if (res.protocols) protocols.value = res.protocols
+  } catch (error) {
+    alert('加载失败：' + (error.response?.data?.error || error.message))
   } finally {
-    textSaving.value = false
+    loading.value = false
   }
 }
 
-async function saveImageConfig() {
-  imageSaving.value = true
+function openCreate() {
+  editingId.value = null
+  editingProvider.value = null
+  dialogOpen.value = true
+}
+
+function openEdit(item) {
+  editingId.value = item.id
+  editingProvider.value = item
+  dialogOpen.value = true
+}
+
+async function onDialogSubmit(payload) {
+  saving.value = true
   try {
-    await aiConfigApi.saveImageConfig(imageForm.value)
-    alert('图片模型配置已保存')
-  } catch (e) {
-    alert('保存失败：' + (e.response?.data?.error || e.message))
+    if (editingId.value) {
+      await aiProviderApi.update(editingId.value, payload)
+    } else {
+      await aiProviderApi.create(payload)
+    }
+    dialogOpen.value = false
+    await load()
+  } catch (error) {
+    alert('保存失败：' + (error.response?.data?.error || error.message))
   } finally {
-    imageSaving.value = false
+    saving.value = false
   }
 }
 
-onMounted(() => {
-  loadConfigs()
-})
+async function onSetDefault(item) {
+  try {
+    await aiProviderApi.setDefault(item.id)
+    await load()
+  } catch (error) {
+    alert('设置默认失败：' + (error.response?.data?.error || error.message))
+  }
+}
+
+async function confirmRemove(item) {
+  if (!confirm(`确定删除提供商「${item.name}」？`)) return
+  try {
+    await aiProviderApi.remove(item.id)
+    await load()
+  } catch (error) {
+    alert('删除失败：' + (error.response?.data?.error || error.message))
+  }
+}
+
+onMounted(load)
 </script>
+
+<style scoped>
+.ai-admin {
+  padding: 4px 2px 24px;
+}
+
+.ai-admin__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.ai-admin__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ai-admin__subtitle {
+  margin: 6px 0 0;
+  max-width: 52ch;
+  font-size: 0.875rem;
+  opacity: 0.72;
+  line-height: 1.5;
+}
+
+.ai-admin__tabs {
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.ai-admin__table-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+</style>

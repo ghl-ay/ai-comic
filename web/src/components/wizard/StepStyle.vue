@@ -13,6 +13,13 @@
 
       <v-row>
         <v-col cols="12">
+          <AiProviderSelect
+            ref="textProviderSelect"
+            type="text"
+            v-model="textProviderId"
+          />
+        </v-col>
+        <v-col cols="12">
           <v-text-field
             v-model="localStyle.title"
             label="漫画标题"
@@ -33,6 +40,7 @@
             variant="outlined"
             color="primary"
             :loading="store.loading"
+            :disabled="textProviderId == null"
             @click="regenerate"
           >
             <v-icon left>mdi-refresh</v-icon>
@@ -47,8 +55,11 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useNovelWizardStore } from '../../stores/novelWizard'
+import AiProviderSelect from '../business/AiProviderSelect.vue'
 
 const store = useNovelWizardStore()
+const textProviderSelect = ref(null)
+const textProviderId = ref(null)
 
 const localStyle = ref({
   title: store.style.title,
@@ -60,9 +71,11 @@ watch(localStyle, (val) => {
 }, { deep: true })
 
 onMounted(async () => {
+  await textProviderSelect.value?.ensureLoaded()
   if (!store.style.title && store.novelId) {
+    if (textProviderId.value == null) return
     try {
-      await store.analyzeStyle()
+      await store.analyzeStyle(textProviderId.value)
       localStyle.value = { ...store.style }
     } catch (e) {
       console.error('分析风格失败:', e)
@@ -71,8 +84,9 @@ onMounted(async () => {
 })
 
 async function regenerate() {
+  if (textProviderId.value == null) return
   try {
-    await store.analyzeStyle()
+    await store.analyzeStyle(textProviderId.value)
     localStyle.value = { ...store.style }
   } catch (e) {
     console.error('重新生成失败:', e)

@@ -22,13 +22,13 @@ export default {
     return res.data
   },
 
-  async analyzeStyle(id) {
-    const res = await api.post(`/novels/${id}/analyze-style`)
+  async analyzeStyle(id, data = {}) {
+    const res = await api.post(`/novels/${id}/analyze-style`, data)
     return res.data
   },
 
-  async extractCharacters(id) {
-    const res = await api.post(`/novels/${id}/extract-characters`)
+  async extractCharacters(id, data = {}) {
+    const res = await api.post(`/novels/${id}/extract-characters`, data)
     return res.data
   },
 

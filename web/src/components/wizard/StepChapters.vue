@@ -11,6 +11,12 @@
         {{ store.error }}
       </v-alert>
 
+      <AiProviderSelect
+        ref="textProviderSelect"
+        type="text"
+        v-model="textProviderId"
+      />
+
       <v-expansion-panels v-if="localChapters.length > 0">
         <v-expansion-panel
           v-for="(chapter, index) in localChapters"
@@ -75,6 +81,7 @@
             variant="outlined"
             color="primary"
             :loading="store.loading"
+            :disabled="textProviderId == null"
             @click="regenerate"
           >
             <v-icon left>mdi-refresh</v-icon>
@@ -89,8 +96,11 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import { useNovelWizardStore } from '../../stores/novelWizard'
+import AiProviderSelect from '../business/AiProviderSelect.vue'
 
 const store = useNovelWizardStore()
+const textProviderSelect = ref(null)
+const textProviderId = ref(null)
 
 const localChapters = ref([])
 
@@ -114,9 +124,11 @@ watch(localChapters, (val) => {
 }, { deep: true })
 
 onMounted(async () => {
+  await textProviderSelect.value?.ensureLoaded()
   if (store.chapters.length === 0 && store.novelId) {
+    if (textProviderId.value == null) return
     try {
-      await store.generateChapters()
+      await store.generateChapters(textProviderId.value)
       localChapters.value = [...store.chapters]
     } catch (e) {
       console.error('生成章节失败:', e)
@@ -127,8 +139,9 @@ onMounted(async () => {
 })
 
 async function regenerate() {
+  if (textProviderId.value == null) return
   try {
-    await store.generateChapters()
+    await store.generateChapters(textProviderId.value)
     localChapters.value = [...store.chapters]
   } catch (e) {
     console.error('重新生成失败:', e)
