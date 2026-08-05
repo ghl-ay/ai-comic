@@ -6,9 +6,11 @@
     "stop": "egg-scripts stop --title=ai-comic-server",
     "dev": "egg-bin dev",
     "test": "egg-bin test",
-    "migrate:oidc": "node database/migrate-oidc.js"
+    "migrate:oidc": "node database/migrate-oidc.js",
+    "migrate:ai-providers": "node database/migrate-ai-providers.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.0.0",
