@@ -4,6 +4,7 @@ services:
     environment:
       EGG_KEYS: ${EGG_KEYS}
       JWT_SECRET: ${JWT_SECRET}
+      MAINTAIN_TOKEN: ${MAINTAIN_TOKEN}
       # 与镜像 ENV 一致；数据目录与代码目录分离，禁止挂载 /app/database
       DB_PATH: /app/data/database/comic.db
     volumes:
