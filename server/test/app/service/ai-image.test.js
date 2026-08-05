@@ -30,6 +30,59 @@ describe('test/app/service/ai-image.test.js', () => {
       assert(prompt.includes('小明'));
       assert(prompt.includes('街道'));
     });
+
+    it('numbers references as style cover → character → previous chapter', () => {
+      const prompt = buildComicPagePrompt({
+        comicTitle: '测试漫画',
+        stylePrompt: '日系黑白',
+        layoutType: 2,
+        chapterPrompt: '主角相遇',
+        script: {
+          panels: [
+            { number: 1, scene: '街道', dialogue: '你好', characters: [1] },
+          ],
+        },
+        characterReferences: [
+          { id: 1, name: '小明', appearance: '黑发', imageUrl: '/images/characters/a.png' },
+          { id: 2, name: '小红', appearance: '红发' },
+          { id: 3, name: '小刚', appearance: '短发', imageUrl: '/images/characters/c.png' },
+        ],
+        previousChapter: {
+          image: 'prev.png',
+          chapterPrompt: '前情',
+          script: { panels: [{ number: 1, scene: '旧场景' }] },
+        },
+        hasStyleCover: true,
+      });
+
+      assert(prompt.includes('第1张图片是画风示例参考'));
+      assert(prompt.includes('第2张图片是「小明」的角色参考图'));
+      assert(prompt.includes('第3张图片是「小刚」的角色参考图'));
+      assert(prompt.includes('第4张图片是上一章的漫画参考图'));
+      assert(prompt.includes('参考图：第2张图片')); // 小明
+      assert(prompt.includes('参考图：第3张图片')); // 小刚
+      assert(prompt.includes('上一章参考图：第4张图片'));
+      assert(prompt.includes('不要把示例场景当作剧情场景'));
+    });
+
+    it('starts character images at 1 when no style cover', () => {
+      const prompt = buildComicPagePrompt({
+        comicTitle: '测试漫画',
+        stylePrompt: '日系黑白',
+        layoutType: 1,
+        chapterPrompt: 'x',
+        script: { panels: [{ number: 1, scene: 's', characters: [1] }] },
+        characterReferences: [
+          { id: 1, name: '主角', imageUrl: '/images/characters/a.png' },
+        ],
+        previousChapter: null,
+        hasStyleCover: false,
+      });
+
+      assert(prompt.includes('第1张图片是「主角」的角色参考图'));
+      assert(prompt.includes('参考图：第1张图片'));
+      assert(!prompt.includes('画风示例参考'));
+    });
   });
 
   describe('OpenAIImageProtocol', () => {
