@@ -183,7 +183,9 @@
                     <AiProviderSelect type="image" v-model="imageProviderId" />
                     <div class="mb-4">
                       <div class="text-body-1">分镜布局：{{ chapter.layout_type }} 格</div>
-                      <div class="text-body-1">风格：{{ chapter.comic?.style_prompt || '默认日系黑白漫画' }}</div>
+                      <div class="text-body-1">
+                        风格：{{ chapter.comic?.stylePreset?.name || chapter.comic?.style_prompt || '日漫黑白' }}
+                      </div>
                     </div>
 
                     <v-btn

@@ -1,7 +1,7 @@
 <!-- web/src/views/Admin.vue -->
 <template>
   <div class="admin-page">
-    <v-container fluid>
+    <v-container>
       <v-row>
         <v-col cols="12">
           <div class="d-flex align-center mb-4">

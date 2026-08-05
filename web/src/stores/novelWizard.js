@@ -11,7 +11,7 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
   const novelId = ref(null)
   const novelContent = ref('')
   const novelTitle = ref('')
-  const style = ref({ title: '', stylePrompt: '' })
+  const style = ref({ title: '', stylePrompt: '', stylePresetId: null })
   const characters = ref([])
   const chapters = ref([])
   const comicId = ref(null)
@@ -59,9 +59,11 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
       const payload = {}
       if (providerId != null) payload.providerId = providerId
       const res = await novelApi.analyzeStyle(novelId.value, payload)
+      // AI 推荐视为自定义文案，解绑预设，避免与封面参考不一致
       style.value = {
         title: res.title,
         stylePrompt: res.stylePrompt,
+        stylePresetId: null,
       }
       return res
     } catch (e) {
@@ -144,6 +146,7 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
       const comicRes = await comicApi.createComic({
         title: style.value.title,
         stylePrompt: style.value.stylePrompt,
+        stylePresetId: style.value.stylePresetId,
       })
       comicId.value = comicRes.comic.id
 
@@ -201,7 +204,7 @@ export const useNovelWizardStore = defineStore('novelWizard', () => {
     novelId.value = null
     novelContent.value = ''
     novelTitle.value = ''
-    style.value = { title: '', stylePrompt: '' }
+    style.value = { title: '', stylePrompt: '', stylePresetId: null }
     characters.value = []
     chapters.value = []
     comicId.value = null

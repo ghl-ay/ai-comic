@@ -49,11 +49,13 @@ const transitionName = computed(() => {
   display: flex;
   flex-direction: column;
   padding-top: 0 !important;
+  width: 100%;
 }
 
-/* 确保 router-view 占满空间 */
+/* 确保 router-view 占满空间；宽度由全局 --layout-content-max 约束 v-container */
 .main-layout__content > :deep(.v-container) {
   flex: 1;
+  width: 100%;
 }
 
 /* 页面过渡动画 */

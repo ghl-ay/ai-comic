@@ -97,7 +97,7 @@
     </v-container>
     
     <!-- 创建漫画对话框 -->
-    <v-dialog v-model="createDialog" max-width="500">
+    <v-dialog v-model="createDialog" max-width="800">
       <v-card class="comics-page__dialog">
         <v-card-title class="comics-page__dialog-title">
           创建新漫画
@@ -124,13 +124,14 @@
                 @click="generateWithAi"
               >
                 <v-icon left size="small">mdi-auto-fix</v-icon>
-                AI 一键生成
+                AI 帮我写风格描述
               </v-btn>
             </div>
-            
+
+            <div class="text-subtitle-2 mb-2">选择风格</div>
             <StylePresetSelector
-              v-model="createForm.stylePrompt"
-              :show-ai="false"
+              v-model:style-prompt="createForm.stylePrompt"
+              v-model:style-preset-id="createForm.stylePresetId"
             />
           </v-form>
         </v-card-text>
@@ -218,6 +219,7 @@ const filters = ref({
 const createForm = ref({
   title: '',
   stylePrompt: '',
+  stylePresetId: null,
 })
 
 // 计算过滤后的漫画列表
@@ -275,16 +277,16 @@ async function loadComics() {
 
 // 打开创建对话框
 function openCreateDialog() {
-  createForm.value = { title: '', stylePrompt: '' }
+  createForm.value = { title: '', stylePrompt: '', stylePresetId: null }
   createDialog.value = true
 }
 
-// AI 一键生成
+// AI 一键生成（会解绑预设，使用自定义文案）
 async function generateWithAi() {
   if (!createForm.value.title.trim()) return
 
   const schema = {
-    stylePrompt: '漫画风格提示词，描述画面风格，如：日系黑白漫画、彩色卡通风格、水墨画风等，20-50字',
+    stylePrompt: '用中文描述漫画画面感觉，例如日系黑白、全彩动漫、水墨古风等，20-50字',
   }
 
   await aiFillForm({
@@ -293,7 +295,10 @@ async function generateWithAi() {
     formData: createForm.value,
     fillFields: ['stylePrompt'],
     onFill: (data) => {
-      if (data.stylePrompt) createForm.value.stylePrompt = data.stylePrompt
+      if (data.stylePrompt) {
+        createForm.value.stylePrompt = data.stylePrompt
+        createForm.value.stylePresetId = null
+      }
     },
   })
 }
@@ -304,7 +309,11 @@ async function createComic() {
   
   creating.value = true
   try {
-    const res = await comicApi.createComic(createForm.value)
+    const res = await comicApi.createComic({
+      title: createForm.value.title,
+      stylePrompt: createForm.value.stylePrompt,
+      stylePresetId: createForm.value.stylePresetId,
+    })
     comics.value.unshift(res.comic)
     createDialog.value = false
     router.push(`/comics/${res.comic.id}`)

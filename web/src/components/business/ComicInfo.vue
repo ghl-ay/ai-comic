@@ -80,6 +80,7 @@
       
       <div class="comic-info__actions">
         <v-btn
+          v-if="hasNovel"
           variant="outlined"
           color="info"
           class="comic-info__action-btn"
@@ -121,6 +122,12 @@ const props = defineProps({
   comic: {
     type: Object,
     required: true,
+  },
+
+  /** 是否有关联小说（无则不展示「查看小说」） */
+  hasNovel: {
+    type: Boolean,
+    default: false,
   },
   
   exporting: {

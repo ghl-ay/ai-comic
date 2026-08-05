@@ -178,6 +178,10 @@
   --container-lg: 1024px;
   --container-xl: 1280px;
   --container-2xl: 1536px;
+
+  /* 站点主内容区最大宽度（导航/页脚/业务页 v-container 对齐）
+     27" 等宽屏避免铺满；约等于阅读/后台舒适宽度 */
+  --layout-content-max: 1280px;
 }
 
 /* ==================== 深色主题 ==================== */
@@ -432,7 +436,7 @@ hr,
 /* 响应式容器 */
 .container {
   width: 100%;
-  max-width: var(--container-xl);
+  max-width: var(--layout-content-max);
   margin-left: auto;
   margin-right: auto;
   padding-left: var(--spacing-4);
@@ -451,4 +455,20 @@ hr,
     padding-left: var(--spacing-8);
     padding-right: var(--spacing-8);
   }
+}
+
+/**
+ * 全局限制 Vuetify 主内容容器宽度
+ * 默认在 xl/xxl 断点可能拉到 1920px+，宽屏阅读/操作区过散
+ * fluid 用于登录等全屏布局，不套此上限
+ */
+.v-application .v-container:not(.v-container--fluid) {
+  max-width: min(100%, var(--layout-content-max)) !important;
+}
+
+/* 后台等曾用 fluid 的页面：改为有上限的居中内容区 */
+.v-application .v-container.v-container--fluid.layout-content-bound {
+  max-width: min(100%, var(--layout-content-max)) !important;
+  margin-left: auto;
+  margin-right: auto;
 }

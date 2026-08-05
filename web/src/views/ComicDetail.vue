@@ -51,6 +51,7 @@
           <v-col cols="12" md="4">
             <comic-info
               :comic="comic"
+              :has-novel="hasNovel"
               :exporting="exporting"
               @edit-title="startEditTitle"
               @edit-style="openStyleDialog"
@@ -143,39 +144,14 @@
         >
           <v-card class="comic-detail__dialog">
             <v-card-title class="comic-detail__dialog-title">
-              编辑风格提示词
+              修改风格
             </v-card-title>
             
             <v-card-text class="comic-detail__dialog-content">
-              <div class="mb-4">
-                <v-btn
-                  variant="outlined"
-                  prepend-icon="mdi-palette"
-                  @click="showPresetSelector = !showPresetSelector"
-                >
-                  从预设选择
-                </v-btn>
-              </div>
-              
-              <v-expand-transition>
-                <div v-show="showPresetSelector" class="mb-4">
-                  <StylePresetSelector
-                    v-model="editStyleValue"
-                    :show-ai="false"
-                    :show-actions="true"
-                    @confirm="showPresetSelector = false"
-                    @cancel="showPresetSelector = false"
-                  />
-                </div>
-              </v-expand-transition>
-              
-              <v-textarea
-                v-model="editStyleValue"
-                label="风格提示词"
-                hint="如：日系黑白漫画、彩色卡通风格等"
-                rows="8"
-                auto-grow
-                variant="outlined"
+              <StylePresetSelector
+                v-model:style-prompt="editStyleValue"
+                v-model:style-preset-id="editStylePresetId"
+                :auto-select-default="false"
               />
             </v-card-text>
             
@@ -237,6 +213,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { jsPDF } from 'jspdf'
 import comicApi from '../api/comic'
 import chapterApi from '../api/chapter'
+import novelApi from '../api/novel'
 import ComicPreview from '../components/ComicPreview.vue'
 import ComicInfo from '../components/business/ComicInfo.vue'
 import ChapterList from '../components/business/ChapterList.vue'
@@ -248,6 +225,7 @@ const router = useRouter()
 // 状态
 const loading = ref(true)
 const comic = ref(null)
+const hasNovel = ref(false)
 const createChapterDialog = ref(false)
 const deleteChapterDialog = ref(false)
 const deleteChapterTarget = ref(null)
@@ -262,8 +240,8 @@ const savingTitle = ref(false)
 const titleInput = ref(null)
 const styleDialog = ref(false)
 const editStyleValue = ref('')
+const editStylePresetId = ref(null)
 const savingStyle = ref(false)
-const showPresetSelector = ref(false)
 const novelDialog = ref(false)
 const novelContent = ref('')
 const novelTitle = ref('')
@@ -282,12 +260,19 @@ const chapterForm = ref({
   layoutType: 4,
 })
 
-// 加载漫画数据
+// 加载漫画数据，并探测是否关联小说
 async function loadComic() {
   loading.value = true
+  hasNovel.value = false
   try {
     const res = await comicApi.getComic(route.params.id)
     comic.value = res.comic
+    try {
+      const novelRes = await novelApi.getNovelByComicId(route.params.id)
+      hasNovel.value = !!(novelRes.novel && novelRes.novel.id)
+    } catch {
+      hasNovel.value = false
+    }
   } catch (e) {
     console.error('加载漫画失败', e)
     router.push('/comics')
@@ -296,21 +281,27 @@ async function loadComic() {
   }
 }
 
-// 打开小说对话框
+// 打开小说对话框（无关联小说时不打开）
 async function openNovelDialog() {
+  if (!hasNovel.value) return
+
   loadingNovel.value = true
   novelDialog.value = true
+  novelContent.value = ''
+  novelTitle.value = '小说原文'
   try {
-    const res = await fetch(`/api/novels/by-comic/${route.params.id}`, {
-      credentials: 'include',
-    })
-    if (res.ok) {
-      const data = await res.json()
-      novelContent.value = data.novel?.content || ''
-      novelTitle.value = data.novel?.title || '小说原文'
+    const data = await novelApi.getNovelByComicId(route.params.id)
+    if (data.novel) {
+      novelContent.value = data.novel.content || ''
+      novelTitle.value = data.novel.title || '小说原文'
+    } else {
+      novelDialog.value = false
+      hasNovel.value = false
     }
   } catch (e) {
     console.error('加载小说失败', e)
+    novelDialog.value = false
+    hasNovel.value = false
   } finally {
     loadingNovel.value = false
   }
@@ -501,6 +492,11 @@ function cancelEditTitle() {
 // 打开风格对话框
 function openStyleDialog() {
   editStyleValue.value = comic.value.style_prompt || ''
+  editStylePresetId.value =
+    comic.value.stylePresetId ??
+    comic.value.style_preset_id ??
+    comic.value.stylePreset?.id ??
+    null
   styleDialog.value = true
 }
 
@@ -508,8 +504,21 @@ function openStyleDialog() {
 async function saveStyle() {
   savingStyle.value = true
   try {
-    await comicApi.updateComic(comic.value.id, { stylePrompt: editStyleValue.value })
-    comic.value.style_prompt = editStyleValue.value
+    const res = await comicApi.updateComic(comic.value.id, {
+      stylePrompt: editStyleValue.value,
+      stylePresetId: editStylePresetId.value,
+    })
+    if (res.comic) {
+      comic.value = { ...comic.value, ...res.comic }
+    } else {
+      // 后端应始终返回 comic；兜底时同步清空/设置 stylePreset 嵌套
+      comic.value.style_prompt = editStyleValue.value
+      comic.value.style_preset_id = editStylePresetId.value
+      comic.value.stylePresetId = editStylePresetId.value
+      if (editStylePresetId.value == null) {
+        comic.value.stylePreset = null
+      }
+    }
     styleDialog.value = false
   } catch (e) {
     console.error('保存风格失败', e)

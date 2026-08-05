@@ -72,8 +72,8 @@
         </div>
       </div>
       
-      <p v-if="comic.style_prompt" class="comic-card__description text-truncate-2">
-        风格：{{ comic.style_prompt }}
+      <p v-if="styleLabel" class="comic-card__description text-truncate-2">
+        风格：{{ styleLabel }}
       </p>
     </v-card-text>
     
@@ -128,6 +128,16 @@ const coverImage = computed(() => {
     return `/images/comics/${props.comic.cover_image}`
   }
   return null
+})
+
+// 展示风格名：优先预设名称，避免把整段技术文案甩给用户
+const styleLabel = computed(() => {
+  if (props.comic.stylePreset?.name) return props.comic.stylePreset.name
+  if (props.comic.style_prompt) {
+    const text = props.comic.style_prompt
+    return text.length > 36 ? `${text.slice(0, 36)}…` : text
+  }
+  return ''
 })
 
 // 计算卡片样式类

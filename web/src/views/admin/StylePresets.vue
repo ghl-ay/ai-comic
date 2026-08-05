@@ -2,25 +2,65 @@
 <template>
   <div class="style-presets-admin">
     <v-card>
-      <v-card-title class="d-flex align-center">
+      <v-card-title class="d-flex align-center flex-wrap ga-2">
         风格预设管理
         <v-spacer />
+        <v-btn
+          color="secondary"
+          variant="outlined"
+          prepend-icon="mdi-image-multiple"
+          :loading="batchGenerating"
+          @click="regenerateAllCovers"
+        >
+          批量生成预览图
+        </v-btn>
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
           @click="openCreateDialog"
         >
-          新增预设
+          新增风格
         </v-btn>
       </v-card-title>
 
       <v-card-text>
+        <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+          系统内置 8 种核心风格不可删除。预览图展示各风格大致效果，方便用户挑选；批量生成会逐张调用接口，可能需要几分钟。
+        </v-alert>
+        <v-alert
+          v-if="batchGenerating && batchProgress"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          正在生成预览图：{{ batchProgress }}
+        </v-alert>
+
         <v-data-table
           :headers="headers"
           :items="presets"
           :loading="loading"
           loading-text="加载中..."
         >
+          <template #item.coverImage="{ item }">
+            <div class="style-presets-admin__cover">
+              <v-img
+                v-if="item.coverImage"
+                :src="item.coverImage"
+                width="64"
+                height="64"
+                cover
+                class="rounded"
+              >
+                <template #error>
+                  <div class="style-presets-admin__cover-empty">无图</div>
+                </template>
+              </v-img>
+              <div v-else class="style-presets-admin__cover-empty">无图</div>
+            </div>
+          </template>
+
           <template #item.isEnabled="{ item }">
             <v-switch
               :model-value="item.isEnabled"
@@ -35,6 +75,17 @@
               icon
               variant="text"
               size="small"
+              color="secondary"
+              :loading="regeneratingId === item.id"
+              title="重新生成预览图"
+              @click="regenerateOne(item)"
+            >
+              <v-icon>mdi-image-refresh</v-icon>
+            </v-btn>
+            <v-btn
+              icon
+              variant="text"
+              size="small"
               color="primary"
               @click="openEditDialog(item)"
             >
@@ -45,6 +96,8 @@
               variant="text"
               size="small"
               color="error"
+              :disabled="item.isCore"
+              :title="item.isCore ? '内置风格不能删除' : '删除'"
               @click="confirmDelete(item)"
             >
               <v-icon>mdi-delete</v-icon>
@@ -54,47 +107,53 @@
       </v-card-text>
     </v-card>
 
-    <!-- 新增/编辑对话框 -->
     <v-dialog v-model="dialog" max-width="600" persistent>
       <v-card>
-        <v-card-title>{{ isEdit ? '编辑预设' : '新增预设' }}</v-card-title>
+        <v-card-title>{{ isEdit ? '编辑风格' : '新增风格' }}</v-card-title>
         <v-card-text>
           <v-form ref="formRef" @submit.prevent="save">
             <v-text-field
               v-model="form.code"
-              label="编码"
+              label="编码（系统用）"
               :rules="[v => !!v || '必填']"
               :disabled="isEdit"
               class="mb-2"
             />
             <v-text-field
               v-model="form.name"
-              label="名称"
+              label="显示名称"
               :rules="[v => !!v || '必填']"
               class="mb-2"
             />
             <v-text-field
               v-model="form.category"
-              label="分类"
+              label="分组"
               :rules="[v => !!v || '必填']"
               class="mb-2"
             />
             <v-textarea
               v-model="form.stylePrompt"
-              label="风格提示词"
+              label="给 AI 的风格说明（中文）"
               :rules="[v => !!v || '必填']"
               rows="4"
               class="mb-2"
             />
             <v-textarea
               v-model="form.description"
-              label="描述"
+              label="给用户看的简介"
               rows="2"
               class="mb-2"
             />
             <v-text-field
+              v-model="form.coverImage"
+              label="预览图地址"
+              hint="一般由「生成预览图」自动填写，也可手动指定路径"
+              persistent-hint
+              class="mb-2"
+            />
+            <v-text-field
               v-model.number="form.sortOrder"
-              label="排序权重"
+              label="排序（数字越小越靠前）"
               type="number"
               class="mb-2"
             />
@@ -108,12 +167,11 @@
       </v-card>
     </v-dialog>
 
-    <!-- 删除确认对话框 -->
     <v-dialog v-model="deleteDialog" max-width="400">
       <v-card>
         <v-card-title>确认删除</v-card-title>
         <v-card-text>
-          确定要删除预设「{{ deleteTarget?.name }}」吗？
+          确定要删除风格「{{ deleteTarget?.name }}」吗？
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -135,10 +193,13 @@ const dialog = ref(false)
 const deleteDialog = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const batchGenerating = ref(false)
+const regeneratingId = ref(null)
 const isEdit = ref(false)
 const editId = ref(null)
 const deleteTarget = ref(null)
 const formRef = ref(null)
+const batchProgress = ref('')
 
 const form = ref({
   code: '',
@@ -146,17 +207,19 @@ const form = ref({
   category: '',
   stylePrompt: '',
   description: '',
-  sortOrder: 0
+  coverImage: '',
+  sortOrder: 0,
 })
 
 const headers = [
+  { title: '预览', key: 'coverImage', width: '90px', sortable: false },
   { title: '编码', key: 'code', width: '120px' },
   { title: '名称', key: 'name', width: '120px' },
-  { title: '分类', key: 'category', width: '100px' },
-  { title: '风格提示词', key: 'stylePrompt', minWidth: '200px' },
+  { title: '分组', key: 'category', width: '100px' },
+  { title: '风格说明', key: 'stylePrompt', minWidth: '200px' },
   { title: '排序', key: 'sortOrder', width: '90px' },
   { title: '启用', key: 'isEnabled', width: '90px' },
-  { title: '操作', key: 'actions', width: '120px', sortable: false }
+  { title: '操作', key: 'actions', width: '160px', sortable: false },
 ]
 
 async function loadPresets() {
@@ -181,7 +244,8 @@ function openCreateDialog() {
     category: '',
     stylePrompt: '',
     description: '',
-    sortOrder: 0
+    coverImage: '',
+    sortOrder: 0,
   }
   dialog.value = true
 }
@@ -195,7 +259,8 @@ function openEditDialog(item) {
     category: item.category,
     stylePrompt: item.stylePrompt,
     description: item.description,
-    sortOrder: item.sortOrder
+    coverImage: item.coverImage || '',
+    sortOrder: item.sortOrder,
   }
   dialog.value = true
 }
@@ -227,6 +292,10 @@ async function togglePreset(item) {
 }
 
 function confirmDelete(item) {
+  if (item.isCore) {
+    alert('内置核心风格不能删除')
+    return
+  }
   deleteTarget.value = item
   deleteDialog.value = true
 }
@@ -244,11 +313,82 @@ async function deletePreset() {
   }
 }
 
+async function regenerateOne(item) {
+  regeneratingId.value = item.id
+  try {
+    await stylePresetApi.regenerateCover(item.id)
+    await loadPresets()
+  } catch (error) {
+    alert('生成失败: ' + (error.response?.data?.error || error.message))
+  } finally {
+    regeneratingId.value = null
+  }
+}
+
+async function regenerateAllCovers() {
+  if (!confirm('将为全部风格逐张生成预览图，可能需要几分钟，是否继续？')) {
+    return
+  }
+  batchGenerating.value = true
+  batchProgress.value = ''
+  const results = []
+  const list = [...presets.value]
+  try {
+    // 前端逐条调用单张接口，避免单请求串行生图触发网关超时
+    for (let index = 0; index < list.length; index++) {
+      const item = list[index]
+      batchProgress.value = `${index + 1}/${list.length} ${item.name || item.code}`
+      regeneratingId.value = item.id
+      try {
+        await stylePresetApi.regenerateCover(item.id)
+        results.push({ code: item.code, ok: true })
+      } catch (error) {
+        results.push({
+          code: item.code,
+          ok: false,
+          error: error.response?.data?.error || error.message,
+        })
+      }
+    }
+    await loadPresets()
+    const failed = results.filter(item => !item.ok)
+    if (failed.length) {
+      alert(
+        `完成，但有 ${failed.length} 张失败：\n` +
+          failed.map(item => `${item.code}: ${item.error}`).join('\n')
+      )
+    } else {
+      alert(`全部成功，共 ${results.length} 张`)
+    }
+  } finally {
+    regeneratingId.value = null
+    batchGenerating.value = false
+    batchProgress.value = ''
+  }
+}
+
 onMounted(loadPresets)
 </script>
 
 <style scoped>
 .style-presets-admin {
   width: 100%;
+}
+
+.style-presets-admin__cover {
+  width: 64px;
+  height: 64px;
+}
+
+.style-presets-admin__cover-empty {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: 4px;
 }
 </style>

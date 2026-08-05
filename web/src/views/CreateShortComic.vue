@@ -53,8 +53,8 @@
                     class="mb-4"
                   />
                   <StylePresetSelector
-                    v-model="formData.stylePrompt"
-                    :show-ai="false"
+                    v-model:style-prompt="formData.stylePrompt"
+                    v-model:style-preset-id="formData.stylePresetId"
                   />
                 </v-card-text>
               </v-card>
@@ -131,7 +131,9 @@
                   <div class="mb-4">
                     <div class="text-body-1">标题：{{ formData.title }}</div>
                     <div class="text-body-1">布局：{{ getLayoutName(formData.layout) }}</div>
-                    <div class="text-body-1">风格：{{ formData.stylePrompt || '未选择' }}</div>
+                    <div class="text-body-1">
+                      风格：{{ styleDisplayName }}
+                    </div>
                   </div>
                   <v-btn
                     color="primary"
@@ -186,9 +188,11 @@ import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import StylePresetSelector from '../components/style/StylePresetSelector.vue'
 import AiProviderSelect from '../components/business/AiProviderSelect.vue'
+import { useStylePresetStore } from '../stores/stylePreset'
 
 const router = useRouter()
 const route = useRoute()
+const stylePresetStore = useStylePresetStore()
 
 const textProviderId = ref(null)
 const imageProviderId = ref(null)
@@ -229,8 +233,18 @@ const formData = ref({
   title: '',
   layout: '4',
   stylePrompt: '',
+  stylePresetId: null,
   description: '',
   script: ''
+})
+
+const styleDisplayName = computed(() => {
+  if (formData.value.stylePresetId != null) {
+    const preset = stylePresetStore.getPresetById(formData.value.stylePresetId)
+    if (preset) return preset.name
+  }
+  if (formData.value.stylePrompt?.trim()) return '自定义描述'
+  return '尚未选择'
 })
 
 const layoutOptions = [
@@ -270,6 +284,7 @@ async function saveComic() {
       title: formData.value.title,
       layout: formData.value.layout,
       stylePrompt: formData.value.stylePrompt,
+      stylePresetId: formData.value.stylePresetId,
       description: formData.value.description
     })
     // 保存 ID 并更新 URL 为编辑模式，不触发页面刷新
@@ -288,6 +303,7 @@ async function updateComicConfig() {
       title: formData.value.title,
       layout: formData.value.layout,
       stylePrompt: formData.value.stylePrompt,
+      stylePresetId: formData.value.stylePresetId,
       description: formData.value.description
     })
   } catch (e) {
@@ -379,6 +395,7 @@ async function handleComplete() {
         title: formData.value.title,
         layout: formData.value.layout,
         stylePrompt: formData.value.stylePrompt,
+        stylePresetId: formData.value.stylePresetId,
         description: formData.value.description,
         script: formData.value.script
       })
@@ -398,6 +415,7 @@ onMounted(async () => {
         title: data.title || '',
         layout: String(data.layout_type || '4'),
         stylePrompt: data.style_prompt || '',
+        stylePresetId: data.style_preset_id ?? null,
         description: data.chapter_prompt || '',
         script: data.script_content || ''
       }

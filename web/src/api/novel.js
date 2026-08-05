@@ -17,6 +17,11 @@ export default {
     return res.data
   },
 
+  async getNovelByComicId(comicId) {
+    const res = await api.get(`/novels/by-comic/${comicId}`)
+    return res.data
+  },
+
   async deleteNovel(id) {
     const res = await api.delete(`/novels/${id}`)
     return res.data
