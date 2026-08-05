@@ -20,6 +20,35 @@ describe('test/app/service/ai-image.test.js', () => {
     });
   });
 
+  describe('buildCharacterReferencePrompt()', () => {
+    it('locks three-view layout and white background for consistent sheets', () => {
+      const prompt = AiImageService.buildCharacterReferencePrompt({
+        name: '放屁超人',
+        description: '胆小但善良的高中生',
+        appearance: '短发，校服，表情夸张',
+      });
+
+      assert(prompt.includes('turnaround'));
+      assert(prompt.includes('正面 Front'));
+      assert(prompt.includes('侧面 Side'));
+      assert(prompt.includes('背面 Back'));
+      assert(prompt.includes('#FFFFFF'));
+      assert(prompt.includes('pure white background'));
+      assert(prompt.includes('无文字'));
+      assert(prompt.includes('放屁超人'));
+      assert(prompt.includes('短发，校服，表情夸张'));
+      assert(prompt.includes('胆小但善良的高中生'));
+    });
+
+    it('uses 无 when description is missing', () => {
+      const prompt = AiImageService.buildCharacterReferencePrompt({
+        name: '路人甲',
+        appearance: '黑发短发',
+      });
+      assert(prompt.includes('角色描述：无'));
+    });
+  });
+
   describe('buildComicPagePrompt()', () => {
     it('includes dialogue and character library details', () => {
       const prompt = BaseImageProvider.buildComicPagePrompt({
