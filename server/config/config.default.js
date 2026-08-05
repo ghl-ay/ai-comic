@@ -44,3 +44,8 @@ exports.comicImageDir = 'public/images/comics';
 // 风格预设示例图存储目录
 exports.styleImageDir = 'public/images/styles';
 
+// 数据库维护接口（/api/maintain）；未配置 token 时接口拒绝执行
+exports.maintain = {
+  token: process.env.MAINTAIN_TOKEN || '',
+};
+

@@ -150,37 +150,37 @@ function ensureCoreStylePresets(db) {
 }
 
 /**
- * 空库插入；非空库走 ensure 收敛
+ * 仅空库插入 8 核心预设。已有数据时不做收敛/删除（收敛由 maintain style-presets-v2 人工执行）
  * @param {import('better-sqlite3').Database} db
  */
 function seedStylePresets(db) {
   const count = db.prepare('SELECT COUNT(*) as cnt FROM style_presets').get();
 
-  if (count.cnt === 0) {
-    const insert = db.prepare(`
-      INSERT INTO style_presets (code, name, category, style_prompt, description, cover_image, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const transaction = db.transaction(() => {
-      for (const item of seedData) {
-        insert.run(
-          item.code,
-          item.name,
-          item.category,
-          item.style_prompt,
-          item.description,
-          item.cover_image,
-          item.sort_order
-        );
-      }
-    });
-
-    transaction();
-    console.log(`[数据库初始化] 已插入 ${seedData.length} 条风格预设数据`);
+  if (count.cnt > 0) {
+    return;
   }
 
-  ensureCoreStylePresets(db);
+  const insert = db.prepare(`
+    INSERT INTO style_presets (code, name, category, style_prompt, description, cover_image, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const transaction = db.transaction(() => {
+    for (const item of seedData) {
+      insert.run(
+        item.code,
+        item.name,
+        item.category,
+        item.style_prompt,
+        item.description,
+        item.cover_image,
+        item.sort_order
+      );
+    }
+  });
+
+  transaction();
+  console.log(`[数据库初始化] 空库已插入 ${seedData.length} 条风格预设数据`);
 }
 
 module.exports = {

@@ -2,6 +2,10 @@
 module.exports = app => {
   const { router, controller } = app;
 
+  // 数据库维护（token 保护，无需登录；须在 SPA fallback 之前）
+  router.get('/api/maintain', controller.maintain.index);
+  router.post('/api/maintain/:name', controller.maintain.run);
+
   // 认证相关（无需登录）
   router.post('/api/auth/register', controller.auth.register);
   router.post('/api/auth/login', controller.auth.login);
