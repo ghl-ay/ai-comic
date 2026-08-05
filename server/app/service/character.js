@@ -13,7 +13,7 @@ class CharacterService extends Service {
     return characterId;
   }
 
-  async generateReferenceImage(characterId, userId) {
+  async generateReferenceImage(characterId, userId, providerId = null) {
     // 获取角色
     const character = await this.ctx.service.db.findCharacterByIdAndUserId(
       characterId,
@@ -33,6 +33,7 @@ class CharacterService extends Service {
       name: character.name,
       description: character.description,
       appearance: character.appearance,
+      providerId,
     });
 
     // 更新角色

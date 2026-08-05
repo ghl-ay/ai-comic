@@ -1,6 +1,5 @@
 // server/app/service/novel.js
 const Service = require('egg').Service;
-const OpenAI = require('openai');
 
 class NovelService extends Service {
   async createNovel(userId, title, content) {
@@ -23,115 +22,9 @@ class NovelService extends Service {
     }
   }
 
-  async getClient() {
-    const config = await this.ctx.service.aiConfig.getAiConfigWithKey('text');
-    if (!config || !config.apiKey) {
-      const envConfig = {
-        apiKey: process.env.OPENAI_API_KEY || '',
-        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com',
-        model: process.env.OPENAI_TEXT_MODEL || 'gpt-4o',
-      };
-      if (!envConfig.apiKey) {
-        return null;
-      }
-      return {
-        client: new OpenAI({
-          apiKey: envConfig.apiKey,
-          baseURL: envConfig.baseURL,
-        }),
-        model: envConfig.model,
-      };
-    }
-    return {
-      client: new OpenAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl,
-      }),
-      model: config.model,
-    };
-  }
-
-  parseJsonResponse(content) {
-    if (typeof content !== 'string' || !content.trim()) {
-      throw new Error('AI 返回内容为空');
-    }
-
-    // 尝试直接解析
-    try {
-      return JSON.parse(content);
-    } catch (_) {
-      // 继续尝试其他方法
-    }
-
-    // 尝试移除 markdown 代码块标记
-    let cleanedContent = content;
-
-    // 移除 ```json 或 ``` 开头和结尾
-    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      cleanedContent = codeBlockMatch[1].trim();
-      try {
-        return JSON.parse(cleanedContent);
-      } catch (_) {
-        // 继续尝试其他方法
-      }
-    }
-
-    // 查找 JSON 对象
-    const start = cleanedContent.indexOf('{');
-    if (start === -1) {
-      this.ctx.logger.error('AI 返回内容无法解析为 JSON:', content.substring(0, 500));
-      throw new Error('AI 返回的内容不是有效 JSON');
-    }
-
-    let depth = 0;
-    let inString = false;
-    let escaped = false;
-
-    for (let i = start; i < cleanedContent.length; i++) {
-      const char = cleanedContent[i];
-
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-        } else if (char === '\\') {
-          escaped = true;
-        } else if (char === '"') {
-          inString = false;
-        }
-        continue;
-      }
-
-      if (char === '"') {
-        inString = true;
-      } else if (char === '{') {
-        depth++;
-      } else if (char === '}') {
-        depth--;
-        if (depth === 0) {
-          try {
-            return JSON.parse(cleanedContent.slice(start, i + 1));
-          } catch (e) {
-            this.ctx.logger.error('JSON 解析失败:', e.message, '内容:', cleanedContent.slice(start, i + 1).substring(0, 500));
-            throw new Error('AI 返回的内容不是有效 JSON');
-          }
-        }
-      }
-    }
-
-    this.ctx.logger.error('AI 返回内容无法找到完整 JSON:', content.substring(0, 500));
-    throw new Error('AI 返回的内容不是有效 JSON');
-  }
-
-  async analyzeStyle(novelId, userId) {
+  async analyzeStyle(novelId, userId, providerId = null) {
     const novel = await this.getNovel(novelId, userId);
-
-    const aiConfig = await this.getClient();
-    if (!aiConfig) {
-      this.ctx.throw(500, 'AI 文本服务未配置');
-    }
-
-    const { client, model } = aiConfig;
+    const AiTextService = require('./ai-text');
 
     const systemPrompt = `你是专业的漫画编辑，请根据小说内容推荐合适的漫画风格和标题。
 输出要求：
@@ -146,20 +39,17 @@ class NovelService extends Service {
 ${novel.content.substring(0, 3000)}`;
 
     try {
-      const response = await client.chat.completions.create({
-        model,
+      const { content } = await this.ctx.service.aiText.chat({
+        providerId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-        response_format: { type: 'json_object' },
+        responseFormat: 'json_object',
       });
 
-      const rawContent = response.choices[0].message.content;
-      const content = this.removeThinkTags(rawContent);
-      const result = this.parseJsonResponse(content);
-      
+      const result = AiTextService.parseJsonObject(content);
       const defaultStylePrompt = await this.ctx.service.stylePreset.getDefaultStylePrompt();
 
       return {
@@ -167,20 +57,15 @@ ${novel.content.substring(0, 3000)}`;
         stylePrompt: result.stylePrompt || defaultStylePrompt,
       };
     } catch (err) {
+      if (err.status) throw err;
       this.ctx.logger.error('AI analyze style error:', err);
       this.ctx.throw(500, `AI 分析失败: ${err.message}`);
     }
   }
 
-  async extractCharacters(novelId, userId) {
+  async extractCharacters(novelId, userId, providerId = null) {
     const novel = await this.getNovel(novelId, userId);
-
-    const aiConfig = await this.getClient();
-    if (!aiConfig) {
-      this.ctx.throw(500, 'AI 文本服务未配置');
-    }
-
-    const { client, model } = aiConfig;
+    const AiTextService = require('./ai-text');
 
     const systemPrompt = `你是专业的漫画编辑，请从小说中提取主要角色。
 输出要求：
@@ -196,19 +81,17 @@ ${novel.content.substring(0, 3000)}`;
 ${novel.content.substring(0, 3000)}`;
 
     try {
-      const response = await client.chat.completions.create({
-        model,
+      const { content } = await this.ctx.service.aiText.chat({
+        providerId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-        response_format: { type: 'json_object' },
+        responseFormat: 'json_object',
       });
 
-      const rawContent = response.choices[0].message.content;
-      const content = this.removeThinkTags(rawContent);
-      const result = this.parseJsonResponse(content);
+      const result = AiTextService.parseJsonObject(content);
 
       return {
         characters: (result.characters || []).map((char, index) => ({
@@ -219,15 +102,16 @@ ${novel.content.substring(0, 3000)}`;
         })),
       };
     } catch (err) {
+      if (err.status) throw err;
       this.ctx.logger.error('AI extract characters error:', err);
       this.ctx.throw(500, `AI 提取角色失败: ${err.message}`);
     }
   }
 
-  async generateChapters(novelId, userId, style, characterIds) {
+  async generateChapters(novelId, userId, style, characterIds, providerId = null) {
     const novel = await this.getNovel(novelId, userId);
+    const AiTextService = require('./ai-text');
 
-    // 获取角色信息
     const characters = [];
     for (const charId of characterIds) {
       const char = await this.ctx.service.db.findCharacterByIdAndUserId(charId, userId);
@@ -235,13 +119,6 @@ ${novel.content.substring(0, 3000)}`;
         characters.push({ id: char.id, name: char.name, appearance: char.appearance });
       }
     }
-
-    const aiConfig = await this.getClient();
-    if (!aiConfig) {
-      this.ctx.throw(500, 'AI 文本服务未配置');
-    }
-
-    const { client, model } = aiConfig;
 
     const systemPrompt = `你是专业的漫画编剧，请将小说改编为漫画章节。
 输出要求：
@@ -263,19 +140,17 @@ ${novel.content.substring(0, 3000)}
 ${JSON.stringify(characters, null, 2)}`;
 
     try {
-      const response = await client.chat.completions.create({
-        model,
+      const { content } = await this.ctx.service.aiText.chat({
+        providerId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-        response_format: { type: 'json_object' },
+        responseFormat: 'json_object',
       });
 
-      const rawContent = response.choices[0].message.content;
-      const content = this.removeThinkTags(rawContent);
-      const result = this.parseJsonResponse(content);
+      const result = AiTextService.parseJsonObject(content);
 
       return {
         chapters: (result.chapters || []).map((ch, index) => ({
@@ -288,14 +163,10 @@ ${JSON.stringify(characters, null, 2)}`;
         })),
       };
     } catch (err) {
+      if (err.status) throw err;
       this.ctx.logger.error('AI generate chapters error:', err);
       this.ctx.throw(500, `AI 生成章节失败: ${err.message}`);
     }
-  }
-
-  removeThinkTags(content) {
-    if (typeof content !== 'string') return content;
-    return content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   }
 }
 

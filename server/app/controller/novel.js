@@ -61,9 +61,14 @@ class NovelController extends Controller {
   async analyzeStyle() {
     const { ctx } = this;
     const { id } = ctx.params;
+    const { providerId } = ctx.request.body || {};
 
     try {
-      const result = await ctx.service.novel.analyzeStyle(parseInt(id), ctx.state.user.id);
+      const result = await ctx.service.novel.analyzeStyle(
+        parseInt(id),
+        ctx.state.user.id,
+        providerId
+      );
       ctx.body = result;
     } catch (err) {
       ctx.status = err.status || 500;
@@ -74,9 +79,14 @@ class NovelController extends Controller {
   async extractCharacters() {
     const { ctx } = this;
     const { id } = ctx.params;
+    const { providerId } = ctx.request.body || {};
 
     try {
-      const result = await ctx.service.novel.extractCharacters(parseInt(id), ctx.state.user.id);
+      const result = await ctx.service.novel.extractCharacters(
+        parseInt(id),
+        ctx.state.user.id,
+        providerId
+      );
       ctx.body = result;
     } catch (err) {
       ctx.status = err.status || 500;
@@ -87,7 +97,7 @@ class NovelController extends Controller {
   async generateChapters() {
     const { ctx } = this;
     const { id } = ctx.params;
-    const { style, characterIds } = ctx.request.body;
+    const { style, characterIds, providerId } = ctx.request.body;
 
     if (!style || !style.stylePrompt) {
       ctx.status = 400;
@@ -106,7 +116,8 @@ class NovelController extends Controller {
         parseInt(id),
         ctx.state.user.id,
         style,
-        characterIds
+        characterIds,
+        providerId
       );
       ctx.body = result;
     } catch (err) {

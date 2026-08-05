@@ -112,11 +112,13 @@ class CharacterController extends Controller {
   async generateReference() {
     const { ctx } = this;
     const { id } = ctx.params;
+    const { providerId } = ctx.request.body || {};
 
     try {
       const result = await ctx.service.character.generateReferenceImage(
         parseInt(id),
-        ctx.state.user.id
+        ctx.state.user.id,
+        providerId
       );
 
       const character = await ctx.service.character.getCharacter(

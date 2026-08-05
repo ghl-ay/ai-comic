@@ -1,20 +1,16 @@
 // server/app/service/ai-text.js
 const Service = require('egg').Service;
-const OpenAI = require('openai');
+const { createTextProtocol } = require('../ai/registry');
 
 class AiTextService extends Service {
   static parseScriptContent(content, layoutType) {
     const script = AiTextService.parseJsonObject(content);
 
-    // 验证并规范化输出
     if (!script.panels || !Array.isArray(script.panels)) {
       throw new Error('AI 返回的脚本格式不正确');
     }
 
-    // 确保分镜数量正确
     script.panels = script.panels.slice(0, layoutType);
-
-    // 确保每个分镜有正确的字段
     script.panels = script.panels.map((panel, index) => ({
       number: index + 1,
       scene: panel.scene || '',
@@ -22,7 +18,6 @@ class AiTextService extends Service {
       characters: Array.isArray(panel.characters) ? panel.characters : [],
     }));
 
-    // 如果分镜数量不足，补充空分镜
     while (script.panels.length < layoutType) {
       script.panels.push({
         number: script.panels.length + 1,
@@ -43,15 +38,14 @@ class AiTextService extends Service {
     try {
       return JSON.parse(content);
     } catch (_) {
-      // Some OpenAI-compatible providers may prepend thinking text even when
-      // response_format=json_object is requested.
+      // continue
     }
 
     for (const candidate of AiTextService.findJsonObjectCandidates(content)) {
       try {
         return JSON.parse(candidate);
       } catch (_) {
-        // Keep looking; earlier braces may come from non-JSON thinking text.
+        // keep looking
       }
     }
 
@@ -93,49 +87,44 @@ class AiTextService extends Service {
     }
   }
 
-  async getClient() {
-    // 从数据库获取全局配置
-    const config = await this.ctx.service.aiConfig.getAiConfigWithKey('text');
+  static removeThinkTags(content) {
+    if (typeof content !== 'string') return content;
+    return content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  }
 
-    if (!config || !config.apiKey) {
-      // 回退到环境变量
-      const envConfig = {
-        apiKey: process.env.OPENAI_API_KEY || '',
-        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com',
-        model: process.env.OPENAI_TEXT_MODEL || 'gpt-4o',
-      };
+  async getProtocol(providerId = null) {
+    const config = this.ctx.service.aiProvider.resolve('text', providerId);
+    const protocol = createTextProtocol(config.protocol, config);
+    return { protocol, config };
+  }
 
-      if (!envConfig.apiKey) {
-        return null;
-      }
+  /**
+   * 通用文本对话
+   */
+  async chat(params) {
+    const {
+      providerId = null,
+      messages,
+      temperature,
+      responseFormat = 'text',
+      maxTokens,
+    } = params;
 
-      return {
-        client: new OpenAI({
-          apiKey: envConfig.apiKey,
-          baseURL: envConfig.baseURL,
-        }),
-        model: envConfig.model,
-      };
-    }
-
-    return {
-      client: new OpenAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl,
-      }),
+    const { protocol, config } = await this.getProtocol(providerId);
+    const result = await protocol.chat({
       model: config.model,
-    };
+      messages,
+      temperature,
+      responseFormat,
+      maxTokens,
+    });
+
+    const content = AiTextService.removeThinkTags(result.content);
+    return { content, raw: result.raw, providerId: config.id, protocol: config.protocol };
   }
 
   async generateScript(params) {
-    const { chapterPrompt, layoutType, characters, previousChapterScript } = params;
-
-    const aiConfig = await this.getClient();
-    if (!aiConfig) {
-      this.ctx.throw(500, 'AI 文本服务未配置');
-    }
-
-    const { client, model } = aiConfig;
+    const { chapterPrompt, layoutType, characters, previousChapterScript, providerId = null } = params;
 
     const systemPrompt = `你是一个专业漫画脚本编剧。根据用户提供的章节提示词、分镜数量、出场角色，生成完整的分镜脚本。
 
@@ -162,43 +151,37 @@ class AiTextService extends Service {
 
     let userPrompt = `章节提示词：${chapterPrompt}
 分镜数量：${layoutType} 格
-出场角色：${JSON.stringify(characters.map(c => ({ id: c.id, name: c.name, appearance: c.appearance })))}`;
+出场角色：${JSON.stringify(characters.map(character => ({
+      id: character.id,
+      name: character.name,
+      appearance: character.appearance,
+    })))}`;
 
     if (previousChapterScript) {
       userPrompt += `\n上一章脚本：${JSON.stringify(previousChapterScript)}`;
     }
 
     try {
-      const response = await client.chat.completions.create({
-        model,
+      const { content } = await this.chat({
+        providerId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.8,
-        response_format: { type: 'json_object' },
+        responseFormat: 'json_object',
       });
 
-      const rawContent = response.choices[0].message.content;
-      const content = AiTextService.removeThinkTags(rawContent);
-      const script = AiTextService.parseScriptContent(content, layoutType);
-
-      return script;
+      return AiTextService.parseScriptContent(content, layoutType);
     } catch (err) {
+      if (err.status) throw err;
       this.ctx.logger.error('AI text generation error:', err);
       this.ctx.throw(500, `AI 脚本生成失败: ${err.message}`);
     }
   }
 
   async fillForm(params) {
-    const { schema, context } = params;
-
-    const aiConfig = await this.getClient();
-    if (!aiConfig) {
-      this.ctx.throw(500, 'AI 文本服务未配置');
-    }
-
-    const { client, model } = aiConfig;
+    const { schema, context, providerId = null } = params;
 
     const systemPrompt = `你是一个智能表单填充助手。根据用户提供的信息，自动填充表单字段。
 
@@ -220,36 +203,27 @@ ${context}
 请直接输出 JSON：`;
 
     try {
-      const response = await client.chat.completions.create({
-        model,
+      const { content } = await this.chat({
+        providerId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-        response_format: { type: 'json_object' },
+        responseFormat: 'json_object',
       });
 
-      const rawContent = response.choices[0].message.content;
-      this.ctx.logger.info('AI fillForm raw response:', rawContent);
-
-      const content = AiTextService.removeThinkTags(rawContent);
+      this.ctx.logger.info('AI fillForm raw response:', content);
       return AiTextService.parseJsonObject(content);
     } catch (err) {
+      if (err.status) throw err;
       this.ctx.logger.error('AI form fill error:', err);
       this.ctx.throw(500, `AI 表单填充失败: ${err.message}`);
     }
   }
 
   async generateChapterPrompt(params) {
-    const { characters, previousChapterScript } = params;
-
-    const aiConfig = await this.getClient();
-    if (!aiConfig) {
-      this.ctx.throw(500, 'AI 文本服务未配置');
-    }
-
-    const { client, model } = aiConfig;
+    const { characters, previousChapterScript, providerId = null } = params;
 
     const systemPrompt = `你是一个漫画编剧助手。根据提供的角色信息和上一章节的剧情，续写本章节的剧情提示词。
 
@@ -261,10 +235,10 @@ ${context}
 5. 直接输出章节提示词文本，不要有其他内容`;
 
     let userPrompt = `【角色信息】\n`;
-    for (const char of characters) {
-      userPrompt += `角色：${char.name}\n`;
-      if (char.description) userPrompt += `- 描述：${char.description}\n`;
-      if (char.appearance) userPrompt += `- 外观：${char.appearance}\n`;
+    for (const character of characters) {
+      userPrompt += `角色：${character.name}\n`;
+      if (character.description) userPrompt += `- 描述：${character.description}\n`;
+      if (character.appearance) userPrompt += `- 外观：${character.appearance}\n`;
       userPrompt += '\n';
     }
 
@@ -284,27 +258,97 @@ ${context}
     userPrompt += `请续写本章节的剧情提示词：`;
 
     try {
-      const response = await client.chat.completions.create({
-        model,
+      const { content } = await this.chat({
+        providerId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.8,
       });
-
-      const rawContent = response.choices[0].message.content;
-      const content = AiTextService.removeThinkTags(rawContent);
       return content.trim();
     } catch (err) {
+      if (err.status) throw err;
       this.ctx.logger.error('AI chapter prompt generation error:', err);
       this.ctx.throw(500, `AI 章节提示词生成失败: ${err.message}`);
     }
   }
 
-  static removeThinkTags(content) {
-    if (typeof content !== 'string') return content;
-    return content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  /**
+   * 短篇：优化剧情描述
+   */
+  async optimizePrompt(params) {
+    const { description, providerId = null } = params;
+
+    const systemPrompt = `你是一个专业的漫画编剧助手。你的任务是优化用户提供的漫画剧情描述。
+
+请直接返回优化后的剧情描述文本，不要包含任何评价、解释、标题或前缀。
+
+优化要求：
+1. 保持原始故事核心不变
+2. 增加场景细节、角色动作、表情描述
+3. 使描述更适合转化为漫画分镜
+4. 长度控制在200-500字`;
+
+    try {
+      const { content } = await this.chat({
+        providerId,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: description },
+        ],
+        temperature: 0.7,
+      });
+      return content.trim();
+    } catch (err) {
+      if (err.status) throw err;
+      this.ctx.logger.error('AI optimize prompt error:', err);
+      this.ctx.throw(500, `AI 优化失败: ${err.message}`);
+    }
+  }
+
+  /**
+   * 短篇：生成分镜脚本（无角色 ID）
+   */
+  async generateShortScript(params) {
+    const { prompt, layoutType, providerId = null } = params;
+
+    const systemPrompt = `你是一个专业漫画脚本编剧。根据用户提供的剧情描述，生成分镜脚本。
+
+输出要求：
+1. 生成 ${layoutType} 格分镜
+2. 每格包含：场景描述、对白内容
+3. 场景描述要具体，包含环境、光影、角色动作
+4. 对白要简洁有戏剧张力
+
+输出 JSON 格式，不要包含任何其他文字：
+{
+  "panels": [
+    {
+      "number": 1,
+      "scene": "场景描述",
+      "dialogue": "对白内容"
+    }
+  ]
+}`;
+
+    try {
+      const { content } = await this.chat({
+        providerId,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.8,
+        responseFormat: 'json_object',
+      });
+
+      return AiTextService.parseScriptContent(content, layoutType);
+    } catch (err) {
+      if (err.status) throw err;
+      this.ctx.logger.error('AI generate short script error:', err);
+      this.ctx.throw(500, `脚本生成失败: ${err.message}`);
+    }
   }
 }
 

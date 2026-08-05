@@ -87,7 +87,7 @@ class ChapterService extends Service {
     await this.ctx.service.db.deleteChapter(id);
   }
 
-  async generateScript(chapterId, userId, prompt, characterIds) {
+  async generateScript(chapterId, userId, prompt, characterIds, providerId = null) {
     const chapter = await this.getChapterWithComic(chapterId, userId);
 
     // 存储用户输入的提示词和角色ID
@@ -121,6 +121,7 @@ class ChapterService extends Service {
       layoutType: chapter.layout_type,
       characters,
       previousChapterScript,
+      providerId,
     });
 
     // 保存脚本
@@ -132,7 +133,7 @@ class ChapterService extends Service {
     return script;
   }
 
-  async generateImage(chapterId, userId) {
+  async generateImage(chapterId, userId, providerId = null) {
     const chapter = await this.getChapterWithComic(chapterId, userId);
 
     if (!chapter.script_content) {
@@ -190,6 +191,7 @@ class ChapterService extends Service {
       script,
       characterReferences: characterRefs,
       previousChapter,
+      providerId,
     });
 
     // 更新章节
@@ -208,7 +210,7 @@ class ChapterService extends Service {
     return result;
   }
 
-  async generateChapterPrompt(chapterId, userId, characterIds) {
+  async generateChapterPrompt(chapterId, userId, characterIds, providerId = null) {
     const chapter = await this.getChapterWithComic(chapterId, userId);
 
     // 获取角色信息
@@ -238,6 +240,7 @@ class ChapterService extends Service {
     const prompt = await this.ctx.service.aiText.generateChapterPrompt({
       characters,
       previousChapterScript,
+      providerId,
     });
 
     return { prompt };

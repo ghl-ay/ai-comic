@@ -128,7 +128,7 @@ class ShortComicController extends Controller {
 
   async optimizePrompt() {
     const { ctx } = this;
-    const { description } = ctx.request.body;
+    const { description, providerId } = ctx.request.body;
 
     if (!description || !description.trim()) {
       ctx.status = 400;
@@ -137,50 +137,21 @@ class ShortComicController extends Controller {
     }
 
     try {
-      const aiConfig = await ctx.service.aiText.getClient();
-      if (!aiConfig) {
-        ctx.status = 500;
-        ctx.body = { error: 'AI 文本服务未配置' };
-        return;
-      }
-
-      const { client, model } = aiConfig;
-
-      const systemPrompt = `你是一个专业的漫画编剧助手。你的任务是优化用户提供的漫画剧情描述。
-
-请直接返回优化后的剧情描述文本，不要包含任何评价、解释、标题或前缀。
-
-优化要求：
-1. 保持原始故事核心不变
-2. 增加场景细节、角色动作、表情描述
-3. 使描述更适合转化为漫画分镜
-4. 长度控制在200-500字
-
-示例输入：一个女孩在公园遇到一只猫
-示例输出：阳光明媚的午后，一位穿着校服的少女漫步在公园的林荫小道上。她突然发现长椅旁蹲着一只橘色的流浪猫，正用圆溜溜的眼睛好奇地望着她。少女蹲下身，轻轻伸出手，猫咪犹豫片刻，慢慢靠近她的指尖。`;
-
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: description }
-        ],
-        temperature: 0.7
+      const optimizedPrompt = await ctx.service.aiText.optimizePrompt({
+        description,
+        providerId,
       });
-
-      const rawContent = response.choices[0].message.content;
-      const optimizedPrompt = ShortComicController.removeThinkTags(rawContent);
       ctx.body = { data: { optimizedPrompt } };
     } catch (err) {
       ctx.logger.error('AI optimize prompt error:', err);
-      ctx.status = 500;
-      ctx.body = { error: 'AI 优化失败: ' + err.message };
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message || 'AI 优化失败' };
     }
   }
 
   async generateScript() {
     const { ctx } = this;
-    const { prompt, layout } = ctx.request.body;
+    const { prompt, layout, providerId } = ctx.request.body;
 
     if (!prompt || !prompt.trim()) {
       ctx.status = 400;
@@ -189,61 +160,24 @@ class ShortComicController extends Controller {
     }
 
     try {
-      const aiConfig = await ctx.service.aiText.getClient();
-      if (!aiConfig) {
-        ctx.status = 500;
-        ctx.body = { error: 'AI 文本服务未配置' };
-        return;
-      }
-
-      const { client, model } = aiConfig;
       const layoutType = parseInt(layout) || 4;
-
-      const systemPrompt = `你是一个专业漫画脚本编剧。根据用户提供的剧情描述，生成分镜脚本。
-
-输出要求：
-1. 生成 ${layoutType} 格分镜
-2. 每格包含：场景描述、对白内容
-3. 场景描述要具体，包含环境、光影、角色动作
-4. 对白要简洁有戏剧张力
-
-输出 JSON 格式，不要包含任何其他文字：
-{
-  "panels": [
-    {
-      "number": 1,
-      "scene": "场景描述",
-      "dialogue": "对白内容"
-    }
-  ]
-}`;
-
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.8,
-        response_format: { type: 'json_object' }
+      const scriptObject = await ctx.service.aiText.generateShortScript({
+        prompt,
+        layoutType,
+        providerId,
       });
-
-      const rawContent = response.choices[0].message.content;
-      const cleanedContent = ShortComicController.removeThinkTags(rawContent);
-      const jsonContent = ShortComicController.removeCodeBlockMarkers(cleanedContent);
-      const script = JSON.stringify(JSON.parse(jsonContent), null, 2);
-
+      const script = JSON.stringify(scriptObject, null, 2);
       ctx.body = { data: { script } };
     } catch (err) {
       ctx.logger.error('AI generate script error:', err);
-      ctx.status = 500;
-      ctx.body = { error: '脚本生成失败: ' + err.message };
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message || '脚本生成失败' };
     }
   }
 
   async generateImage() {
     const { ctx } = this;
-    let { comicId, script, style, stylePrompt, layout } = ctx.request.body;
+    let { comicId, script, style, stylePrompt, layout, providerId } = ctx.request.body;
     const userId = ctx.state.user.id;
     
     // 兼容处理：优先使用 stylePrompt，style 作为降级
@@ -266,17 +200,6 @@ class ShortComicController extends Controller {
     }
 
     try {
-      const config = await ctx.service.aiImage.getClient();
-      if (!config) {
-        ctx.status = 500;
-        ctx.body = { error: 'AI 图片服务未配置' };
-        return;
-      }
-
-      const { createImageProvider } = require('../providers');
-      const BaseImageProvider = require('../providers/base');
-      const provider = createImageProvider(config.apiFormat, config);
-
       const layoutType = parseInt(layout) || 4;
       const defaultStylePrompt = await ctx.service.stylePreset.getDefaultStylePrompt();
       const usedStylePrompt = finalStylePrompt || defaultStylePrompt;
@@ -306,36 +229,18 @@ class ShortComicController extends Controller {
         };
       }
 
-      const prompt = BaseImageProvider.buildComicPagePrompt({
+      const result = await ctx.service.aiImage.generateComicPage({
         comicTitle: comic.title,
         stylePrompt: usedStylePrompt,
         layoutType,
         chapterPrompt,
         script: parsedScript,
         characterReferences: [],
-        previousChapter: null
+        previousChapter: null,
+        providerId,
       });
 
-      const result = await provider.generateImage({ prompt });
-
-      let imageBuffer;
-      if (result.imageBuffer) {
-        imageBuffer = result.imageBuffer;
-      } else if (result.imageUrl) {
-        imageBuffer = await BaseImageProvider.downloadImage(result.imageUrl);
-      }
-
-      const filename = `short_${comicId}_${Date.now()}.png`;
-      const imageDir = this.app.config.comicImageDir || 'public/images/comics';
-      const fs = require('fs');
-      const path = require('path');
-
-      if (!fs.existsSync(imageDir)) {
-        fs.mkdirSync(imageDir, { recursive: true });
-      }
-
-      const filepath = path.join(imageDir, filename);
-      fs.writeFileSync(filepath, imageBuffer);
+      const filename = result.imagePath;
 
       // 更新 chapter
       if (chapter) {
@@ -352,8 +257,8 @@ class ShortComicController extends Controller {
       ctx.body = { data: { imageUrl: `/images/comics/${filename}` } };
     } catch (err) {
       ctx.logger.error('AI image generation error:', err);
-      ctx.status = 500;
-      ctx.body = { error: '图片生成失败: ' + err.message };
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message || '图片生成失败' };
     }
   }
 }

@@ -71,7 +71,7 @@ class ChapterController extends Controller {
   async generateScript() {
     const { ctx } = this;
     const { id } = ctx.params;
-    const { prompt, characterIds } = ctx.request.body;
+    const { prompt, characterIds, providerId } = ctx.request.body;
 
     if (!prompt || !prompt.trim()) {
       ctx.status = 400;
@@ -90,7 +90,8 @@ class ChapterController extends Controller {
         parseInt(id),
         ctx.state.user.id,
         prompt,
-        characterIds
+        characterIds,
+        providerId
       );
       ctx.body = { script };
     } catch (err) {
@@ -102,11 +103,13 @@ class ChapterController extends Controller {
   async generateImage() {
     const { ctx } = this;
     const { id } = ctx.params;
+    const { providerId } = ctx.request.body || {};
 
     try {
       const result = await ctx.service.chapter.generateImage(
         parseInt(id),
-        ctx.state.user.id
+        ctx.state.user.id,
+        providerId
       );
       ctx.body = { imagePath: result.imagePath };
     } catch (err) {
@@ -118,7 +121,7 @@ class ChapterController extends Controller {
   async generateChapterPrompt() {
     const { ctx } = this;
     const { id } = ctx.params;
-    const { characterIds } = ctx.request.body;
+    const { characterIds, providerId } = ctx.request.body;
 
     if (!characterIds || !Array.isArray(characterIds) || characterIds.length === 0) {
       ctx.status = 400;
@@ -130,7 +133,8 @@ class ChapterController extends Controller {
       const result = await ctx.service.chapter.generateChapterPrompt(
         parseInt(id),
         ctx.state.user.id,
-        characterIds
+        characterIds,
+        providerId
       );
       ctx.body = result;
     } catch (err) {

@@ -4,7 +4,7 @@ const Controller = require('egg').Controller;
 class AiAssistController extends Controller {
   async fillForm() {
     const { ctx } = this;
-    const { schema, context } = ctx.request.body;
+    const { schema, context, providerId } = ctx.request.body;
 
     if (!schema || typeof schema !== 'object') {
       ctx.status = 400;
@@ -19,7 +19,7 @@ class AiAssistController extends Controller {
     }
 
     try {
-      const result = await ctx.service.aiText.fillForm({ schema, context });
+      const result = await ctx.service.aiText.fillForm({ schema, context, providerId });
       ctx.body = { data: result };
     } catch (err) {
       ctx.status = err.status || 500;

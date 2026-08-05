@@ -239,120 +239,7 @@ class DbService extends Service {
     return result.changes > 0;
   }
 
-  // AI 配置相关（全局配置，user_id 为 null）
-  findGlobalAiConfigs() {
-    const stmt = this.db.prepare(
-      'SELECT id, type, provider, base_url, model, api_format, created_at, updated_at FROM ai_configs WHERE user_id IS NULL'
-    );
-    return stmt.all();
-  }
-
-  findGlobalAiConfigByType(type) {
-    const stmt = this.db.prepare(
-      'SELECT * FROM ai_configs WHERE user_id IS NULL AND type = ?'
-    );
-    const config = stmt.get(type);
-    if (!config) return null;
-    return {
-      id: config.id,
-      provider: config.provider,
-      apiKey: config.api_key,
-      baseUrl: config.base_url,
-      model: config.model,
-      apiFormat: config.api_format || 'openai',
-    };
-  }
-
-  upsertGlobalAiConfig(type, provider, apiKey, baseUrl, model, apiFormat = 'openai') {
-    const existing = this.findGlobalAiConfigByType(type);
-    if (existing) {
-      const stmt = this.db.prepare(
-        'UPDATE ai_configs SET provider = ?, api_key = ?, base_url = ?, model = ?, api_format = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-      );
-      stmt.run(provider, apiKey, baseUrl, model, apiFormat, existing.id);
-      return existing.id;
-    } else {
-      const stmt = this.db.prepare(
-        'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model, api_format) VALUES (NULL, ?, ?, ?, ?, ?, ?)'
-      );
-      const result = stmt.run(type, provider, apiKey, baseUrl, model, apiFormat);
-      return result.lastInsertRowid;
-    }
-  }
-
-  // 旧方法保留用于兼容
-  createAiConfig(userId, type, provider, apiKey, baseUrl, model) {
-    const stmt = this.db.prepare(
-      'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model) VALUES (?, ?, ?, ?, ?, ?)'
-    );
-    const result = stmt.run(userId, type, provider, apiKey, baseUrl, model);
-    return result.lastInsertRowid;
-  }
-
-  findAiConfigsByUserId(userId) {
-    const stmt = this.db.prepare(
-      'SELECT id, user_id, type, provider, base_url, model, created_at, updated_at FROM ai_configs WHERE user_id = ?'
-    );
-    return stmt.all(userId);
-  }
-
-  findAiConfigByUserIdAndType(userId, type) {
-    const stmt = this.db.prepare(
-      'SELECT * FROM ai_configs WHERE user_id = ? AND type = ?'
-    );
-    return stmt.get(userId, type);
-  }
-
-  updateAiConfig(id, userId, data) {
-    const fields = [];
-    const values = [];
-
-    if (data.provider !== undefined) {
-      fields.push('provider = ?');
-      values.push(data.provider);
-    }
-    if (data.api_key !== undefined) {
-      fields.push('api_key = ?');
-      values.push(data.api_key);
-    }
-    if (data.base_url !== undefined) {
-      fields.push('base_url = ?');
-      values.push(data.base_url);
-    }
-    if (data.model !== undefined) {
-      fields.push('model = ?');
-      values.push(data.model);
-    }
-
-    if (fields.length === 0) {
-      return false;
-    }
-
-    fields.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id, userId);
-    const stmt = this.db.prepare(
-      `UPDATE ai_configs SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
-    );
-    const result = stmt.run(...values);
-    return result.changes > 0;
-  }
-
-  upsertAiConfig(userId, type, provider, apiKey, baseUrl, model) {
-    const existing = this.findAiConfigByUserIdAndType(userId, type);
-    if (existing) {
-      this.updateAiConfig(existing.id, userId, {
-        provider,
-        api_key: apiKey,
-        base_url: baseUrl,
-        model,
-      });
-      return existing.id;
-    } else {
-      return this.createAiConfig(userId, type, provider, apiKey, baseUrl, model);
-    }
-  }
-
-  // 图片存储配置相关
+  // 图片存储配置相关（历史：复用 ai_configs type=image_storage；模型提供商走 ai-provider 服务）
   findStorageConfig() {
     const stmt = this.db.prepare(
       'SELECT * FROM ai_configs WHERE user_id IS NULL AND type = ?'
@@ -396,9 +283,11 @@ class DbService extends Service {
       return existing.id;
     } else {
       const stmt = this.db.prepare(
-        'INSERT INTO ai_configs (user_id, type, provider, api_key, base_url, model, api_format) VALUES (NULL, ?, ?, ?, ?, ?, ?)'
+        `INSERT INTO ai_configs
+          (user_id, type, name, protocol, provider, api_key, base_url, model, enabled, is_default, extra)
+         VALUES (NULL, ?, '', '', ?, ?, '', '', 1, 0, '{}')`
       );
-      const result = stmt.run('image_storage', '', jsonData, '', '', '');
+      const result = stmt.run('image_storage', '', jsonData);
       return result.lastInsertRowid;
     }
   }
@@ -712,34 +601,7 @@ class DbService extends Service {
         this.setConfig('storage', 'default', { provider: 'direct' });
       }
 
-      // 迁移 AI 配置
-      const textConfig = this.findGlobalAiConfigByType('text');
-      if (textConfig) {
-        this.setConfig('ai', textConfig.provider || 'openai', {
-          apiKey: textConfig.apiKey,
-          baseUrl: textConfig.baseUrl,
-          model: textConfig.model,
-          apiFormat: textConfig.apiFormat,
-        });
-      }
-
-      const imageConfig = this.findGlobalAiConfigByType('image');
-      if (imageConfig) {
-        this.setConfig('ai', imageConfig.provider || 'openai', {
-          apiKey: imageConfig.apiKey,
-          baseUrl: imageConfig.baseUrl,
-          model: imageConfig.model,
-          apiFormat: imageConfig.apiFormat,
-        });
-      }
-
-      // 设置 AI 默认提供商
-      if (textConfig || imageConfig) {
-        this.setConfig('ai', 'default', {
-          textProvider: textConfig?.provider || 'openai',
-          imageProvider: imageConfig?.provider || 'openai',
-        });
-      }
+      // AI 模型配置已迁移至多提供商表（ai-provider），不再写入 configs.category=ai
 
       // 设置迁移标记
       this.setConfig('_migration', 'configs', { completed: true });
