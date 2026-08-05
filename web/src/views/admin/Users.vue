@@ -55,16 +55,27 @@
                   >
                     设为管理员
                   </v-btn>
-                  <v-btn
+                  <v-tooltip
                     v-else
-                    color="error"
-                    size="small"
-                    variant="text"
-                    @click="setAdmin(user, false)"
-                    :loading="user._loading"
+                    :disabled="!isLastAdmin"
+                    location="top"
+                    text="系统至少保留一名管理员"
                   >
-                    取消管理员
-                  </v-btn>
+                    <template #activator="{ props: tooltipProps }">
+                      <span v-bind="tooltipProps" class="d-inline-block">
+                        <v-btn
+                          color="error"
+                          size="small"
+                          variant="text"
+                          :disabled="isLastAdmin"
+                          :loading="user._loading"
+                          @click="setAdmin(user, false)"
+                        >
+                          取消管理员
+                        </v-btn>
+                      </span>
+                    </template>
+                  </v-tooltip>
                   <v-btn
                     v-if="user.oidc_bound"
                     color="warning"
@@ -88,11 +99,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import adminApi from '../../api/admin'
 
 const users = ref([])
 const loading = ref(false)
+
+/** 系统至少保留一名管理员：仅剩一个管理员时禁用「取消管理员」 */
+const adminCount = computed(() => users.value.filter(user => user.is_admin).length)
+const isLastAdmin = computed(() => adminCount.value <= 1)
 
 async function loadUsers() {
   loading.value = true

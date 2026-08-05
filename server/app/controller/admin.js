@@ -37,6 +37,16 @@ class AdminController extends Controller {
       return;
     }
 
+    // 取消管理员时，系统至少保留一名管理员
+    if (is_admin === false && user.is_admin === 1) {
+      const adminCount = ctx.service.db.countAdmins();
+      if (adminCount <= 1) {
+        ctx.status = 400;
+        ctx.body = { error: '系统至少保留一名管理员' };
+        return;
+      }
+    }
+
     await ctx.service.db.updateUserAdmin(userId, is_admin);
     ctx.body = {
       user: {

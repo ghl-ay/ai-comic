@@ -52,6 +52,14 @@ class DbService extends Service {
     return result.count;
   }
 
+  countAdmins() {
+    const stmt = this.db.prepare(
+      'SELECT COUNT(*) as count FROM users WHERE is_admin = 1'
+    );
+    const result = stmt.get();
+    return result.count;
+  }
+
   updateUserAdmin(id, isAdmin) {
     const stmt = this.db.prepare(
       'UPDATE users SET is_admin = ? WHERE id = ?'
