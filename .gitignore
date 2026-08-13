@@ -38,6 +38,9 @@ server/database/*.db-journal
 # Docker 运行时数据（SQLite + 用户生成图片，禁止入库）
 /data/
 
+# 部署配置：用 docker-compose.example.yml 复制生成，不入库
+docker-compose.yml
+
 # Auto-generated typings
 server/typings/
 server/run/
