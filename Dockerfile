@@ -29,6 +29,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build-web /web/dist /app/app/public
 
 # 数据目录、Egg 运行目录；node 用户（uid 1000）非 root 运行
+# 注：风格预设图由前端 dist 带入 /app/app/public/images/styles（egg-static 直接服务）；
+#     characters/comics 由卷挂载 /app/public/images 提供，走 controller 认证
 RUN mkdir -p \
       /app/data/database \
       /app/public/images/characters \

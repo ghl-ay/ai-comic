@@ -25,6 +25,9 @@ export default defineConfig({
       '/images': {
         target: 'http://localhost:7001',
         changeOrigin: true,
+        bypass(request) {
+          if (request.url.startsWith('/images/styles/')) return request.url;
+        },
       },
     },
   },
