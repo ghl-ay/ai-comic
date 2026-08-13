@@ -1,0 +1,52 @@
+# docker-compose.example.yml
+# AI 漫画平台 Docker 部署示例（模板）
+#
+# 使用方式：
+#   1. 复制为 docker-compose.yml：cp docker-compose.example.yml docker-compose.yml
+#   2. 在 .env 中配置 EGG_KEYS / JWT_SECRET / MAINTAIN_TOKEN（缺失时 compose 会报错）
+#   3. docker compose up -d --build
+#
+# 两种部署模式（二选一，按需启用）：
+#   [模式 A] 仅暴露容器端口 7001，接入外部反向代理（如 nginx，需 external 网络 main）
+#   [模式 B] 直接映射宿主机 80 端口对外服务
+
+services:
+  server:
+    build: .
+    environment:
+      EGG_KEYS: ${EGG_KEYS:?请设置 EGG_KEYS}
+      JWT_SECRET: ${JWT_SECRET:?请设置 JWT_SECRET}
+      MAINTAIN_TOKEN: ${MAINTAIN_TOKEN:?请设置 MAINTAIN_TOKEN}
+      # 与镜像 ENV 一致；数据目录与代码目录分离，禁止挂载 /app/database
+      DB_PATH: /app/data/database/comic.db
+    networks:
+      - main
+    volumes:
+      - ./data/database:/app/data/database
+      - ./data/images:/app/public/images
+    # 模式 A：接入外部反代（不占宿主端口）
+    # ports:
+    #   - "7001"
+    # 模式 B：直接对外（占宿主 80 端口）
+    # ports:
+    #   - "80:7001"
+    restart: unless-stopped
+    # 镜像内已定义 HEALTHCHECK；此处显式写出便于 compose ps 观察
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:7001/',r=>process.exit(r.statusCode&&r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+
+# 模式 A 需要外部已存在的网络 main（nginx 等反代容器所在网络）：
+#   docker network create main
+networks:
+  main:
+    external: true
