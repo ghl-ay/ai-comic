@@ -3,7 +3,7 @@ exports.keys = process.env.EGG_KEYS || 'CHANGE-ME-IN-PRODUCTION';
 
 exports.cluster = {
   listen: {
-    port: parseInt(process.env.SERVER_PORT || process.env.PORT, 10) || 7001,
+    port: parseInt(process.env.SERVER_PORT, 10) || 7001,
     hostname: '0.0.0.0',
   },
 };

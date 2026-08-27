@@ -18,11 +18,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:7001',
+        target: 'http://127.0.0.1:7001',
         changeOrigin: true,
       },
       '/images': {
-        target: 'http://localhost:7001',
+        target: 'http://127.0.0.1:7001',
         changeOrigin: true,
         bypass(request) {
           if (request.url.startsWith('/images/styles/')) return request.url;
