@@ -394,7 +394,9 @@ class AiProviderService extends Service {
     const cleanBaseUrl = String(baseUrl).trim().replace(/\/+$/, '');
     const cleanApiKey = apiKey ? String(apiKey).trim() : '';
 
-    if (protocol === 'comfyui') {
+    const isComfy = protocol === 'comfyui' || (type === 'image' && cleanBaseUrl.includes(':8188')) || cleanBaseUrl.toLowerCase().includes('comfy');
+
+    if (isComfy) {
       return this.inspectComfyUI({ baseUrl: cleanBaseUrl, apiKey: cleanApiKey });
     }
 
@@ -523,28 +525,32 @@ class AiProviderService extends Service {
     const cleanApiKey = apiKey ? String(apiKey).trim() : '';
     const startTime = Date.now();
 
-    if (protocol === 'comfyui') {
+    const isComfy = protocol === 'comfyui' || (type === 'image' && cleanBaseUrl.includes(':8188')) || cleanBaseUrl.toLowerCase().includes('comfy');
+
+    if (isComfy) {
       const headers = {};
       if (cleanApiKey) {
         headers.Authorization = cleanApiKey.startsWith('Bearer ') ? cleanApiKey : `Bearer ${cleanApiKey}`;
       }
 
       try {
-        // 并行测试 system_stats 与 object_info / queue
-        const [statsRes, objectInfoRes] = await Promise.allSettled([
+        // 多维度并发探测 ComfyUI：/system_stats, /queue, /prompt, /object_info
+        const [statsRes, queueRes, objectInfoRes] = await Promise.allSettled([
           axios.get(`${cleanBaseUrl}/system_stats`, { headers, timeout: 6000 }),
-          axios.get(`${cleanBaseUrl}/object_info`, { headers, timeout: 8000 }),
+          axios.get(`${cleanBaseUrl}/queue`, { headers, timeout: 6000 }),
+          axios.get(`${cleanBaseUrl}/object_info`, { headers, timeout: 12000 }),
         ]);
 
         const latencyMs = Date.now() - startTime;
 
-        if (statsRes.status === 'rejected' && objectInfoRes.status === 'rejected') {
-          const err = statsRes.reason || objectInfoRes.reason;
+        const isAnySuccess = statsRes.status === 'fulfilled' || queueRes.status === 'fulfilled' || objectInfoRes.status === 'fulfilled';
+        if (!isAnySuccess) {
+          const err = statsRes.reason || queueRes.reason || objectInfoRes.reason;
           throw err;
         }
 
         let systemInfo = {};
-        if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+        if (statsRes.status === 'fulfilled' && statsRes.value.data && typeof statsRes.value.data === 'object') {
           systemInfo = statsRes.value.data;
         }
 
@@ -554,7 +560,7 @@ class AiProviderService extends Service {
         let vaeCount = 0;
         let textEncoderCount = 0;
 
-        if (objectInfoRes.status === 'fulfilled' && objectInfoRes.value.data) {
+        if (objectInfoRes.status === 'fulfilled' && objectInfoRes.value.data && typeof objectInfoRes.value.data === 'object') {
           const obj = objectInfoRes.value.data;
           const ckpts = obj.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
             || obj.CheckpointLoader?.input?.required?.ckpt_name?.[0]
@@ -591,7 +597,15 @@ class AiProviderService extends Service {
 
         const summaryText = modelSummary.length > 0
           ? `检测到 ${modelSummary.join('，')}`
-          : '已连接，未检测到模型文件';
+          : 'ComfyUI 服务在线';
+
+        let deviceDesc = '检测到 ComfyUI 服务';
+        if (Array.isArray(systemInfo.devices) && systemInfo.devices.length > 0) {
+          deviceDesc = systemInfo.devices
+            .filter(Boolean)
+            .map(d => `${d.name || 'GPU'} (${Math.round((d.vram_free || 0) / 1024 / 1024 / 1024)}GB Free)`)
+            .join(', ');
+        }
 
         return {
           success: true,
@@ -600,7 +614,7 @@ class AiProviderService extends Service {
           details: {
             os: systemInfo.system?.os || '未知系统',
             python_version: systemInfo.system?.python_version || '',
-            devices: systemInfo.devices?.map(d => `${d.name} (${Math.round((d.vram_free || 0) / 1024 / 1024 / 1024)}GB Free)`).join(', ') || '检测到 ComfyUI 服务',
+            devices: deviceDesc,
             ckptCount,
             diffCount,
             loraCount,

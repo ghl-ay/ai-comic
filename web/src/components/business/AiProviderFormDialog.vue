@@ -831,6 +831,9 @@ async function onTestConnection() {
     alert('请先填写 API Base URL')
     return
   }
+  if (form.type === 'image' && (form.baseUrl.includes(':8188') || form.baseUrl.toLowerCase().includes('comfy'))) {
+    form.protocol = 'comfyui'
+  }
   testingConnection.value = true
   testResult.value = null
   try {
@@ -843,9 +846,10 @@ async function onTestConnection() {
     })
     testResult.value = res
   } catch (err) {
+    const serverErr = err.response?.data?.error || err.message
     testResult.value = {
       success: false,
-      error: '测试失败: ' + (err.response?.data?.error || err.message),
+      error: '测试失败: ' + serverErr,
     }
   } finally {
     testingConnection.value = false
@@ -856,6 +860,9 @@ async function onFetchModels() {
   if (!form.baseUrl) {
     alert('请先填写 API Base URL')
     return
+  }
+  if (form.type === 'image' && (form.baseUrl.includes(':8188') || form.baseUrl.toLowerCase().includes('comfy'))) {
+    form.protocol = 'comfyui'
   }
   fetchingModels.value = true
   try {
