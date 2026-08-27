@@ -440,8 +440,18 @@ function autoMatchWorkflow(modelName, { loras = [], diffusionModels = [], textEn
   }
 
   // 填入 CLIP / Text Encoder
-  if (template.clipNodeId && workflow[template.clipNodeId]?.inputs && textEncoders.length > 0) {
-    workflow[template.clipNodeId].inputs.clip_name = textEncoders[0];
+  if (template.clipNodeId && workflow[template.clipNodeId]?.inputs) {
+    if (textEncoders.length > 0) {
+      workflow[template.clipNodeId].inputs.clip_name = textEncoders[0];
+    }
+    const encoderName = (workflow[template.clipNodeId].inputs.clip_name || '').toLowerCase();
+    if (lowerName.includes('krea') || encoderName.includes('qwen') || encoderName.includes('krea')) {
+      workflow[template.clipNodeId].inputs.type = 'krea2';
+    } else if (lowerName.includes('flux') || encoderName.includes('flux') || encoderName.includes('t5')) {
+      workflow[template.clipNodeId].inputs.type = 'flux';
+    } else if (lowerName.includes('sd3')) {
+      workflow[template.clipNodeId].inputs.type = 'sd3';
+    }
   }
 
   // 填入 VAE

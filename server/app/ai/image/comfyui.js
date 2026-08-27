@@ -104,6 +104,7 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
     const availableVaes = objectInfo.VAELoader?.input?.required?.vae_name?.[0]
       || objectInfo.VAELoaderSimple?.input?.required?.vae_name?.[0]
       || [];
+    const supportedClipTypes = objectInfo.CLIPLoader?.input?.required?.type?.[0] || [];
 
     const isDiffusionModel = (currentModel && availableUnets.some(u => u === currentModel || u.includes(currentModel) || currentModel.includes(u)))
       || (availableCkpts.length === 0 && availableUnets.length > 0)
@@ -137,6 +138,39 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
       return list[0] || target;
     };
 
+    // 辅助函数：智能推断 CLIPLoader 的 type 参数 (如 krea2, flux, sd3 等)
+    const determineClipType = (model, clip) => {
+      const modelLower = (model || '').toLowerCase();
+      const clipLower = (clip || '').toLowerCase();
+
+      if (modelLower.includes('krea') || clipLower.includes('krea')) {
+        if (supportedClipTypes.includes('krea2')) return 'krea2';
+        if (supportedClipTypes.includes('krea')) return 'krea';
+        return 'krea2';
+      }
+      if (clipLower.includes('qwen') && (modelLower.includes('krea') || supportedClipTypes.includes('krea2') || !supportedClipTypes.length)) {
+        return 'krea2';
+      }
+      if (modelLower.includes('flux') || clipLower.includes('flux') || clipLower.includes('t5')) {
+        if (supportedClipTypes.includes('flux')) return 'flux';
+        return 'flux';
+      }
+      if (modelLower.includes('sd3') || clipLower.includes('sd3')) {
+        if (supportedClipTypes.includes('sd3')) return 'sd3';
+        return 'sd3';
+      }
+      if (modelLower.includes('sdxl') || clipLower.includes('sdxl')) {
+        if (supportedClipTypes.includes('sdxl')) return 'sdxl';
+      }
+      if (modelLower.includes('minimax') || clipLower.includes('minimax')) {
+        if (supportedClipTypes.includes('minimax')) return 'minimax';
+      }
+      if (supportedClipTypes.includes('stable_diffusion')) {
+        return 'stable_diffusion';
+      }
+      return supportedClipTypes[0] || 'stable_diffusion';
+    };
+
     // 如果检测到是分立式扩散模型，但工作流中还包含 CheckpointLoaderSimple（例如 SDXL 模板未更换），做无缝动态架构转换
     if (isDiffusionModel) {
       // 检查工作流是否有 CheckpointLoader 节点
@@ -165,6 +199,8 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
         selectedVae = availableVaes.find(v => /image|qwen/i.test(v)) || availableVaes.find(v => !/audio/i.test(v)) || availableVaes[0] || '';
       }
 
+      const targetClipType = determineClipType(currentModel, selectedClip);
+
       if (cpNodeId) {
         // 动态重组：将 CheckpointLoaderSimple 替换为 UNETLoader，并新建 CLIPLoader 和 VAELoader 节点
         const clipNodeId = `${cpNodeId}_clip_loader`;
@@ -182,7 +218,7 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
           class_type: 'CLIPLoader',
           inputs: {
             clip_name: selectedClip,
-            type: 'stable_diffusion',
+            type: targetClipType,
           },
         };
 
@@ -213,9 +249,10 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
           if (node.class_type === 'UNETLoader' || node.class_type === 'DiffusionModelLoader') {
             node.inputs = node.inputs || {};
             node.inputs.unet_name = selectedUnet;
-          } else if (node.class_type === 'CLIPLoader' && selectedClip) {
+          } else if (node.class_type === 'CLIPLoader') {
             node.inputs = node.inputs || {};
-            node.inputs.clip_name = selectedClip;
+            if (selectedClip) node.inputs.clip_name = selectedClip;
+            node.inputs.type = targetClipType;
           } else if (node.class_type === 'VAELoader' && selectedVae) {
             node.inputs = node.inputs || {};
             node.inputs.vae_name = selectedVae;
