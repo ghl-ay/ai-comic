@@ -2,6 +2,191 @@
 'use strict';
 
 const WORKFLOW_TEMPLATES = {
+  krea2_turbo_comic: {
+    id: 'krea2_turbo_comic',
+    name: 'Krea2 + Qwen3-VL 极速漫画工作流 (Turbo 4步)',
+    description: '专为 Krea2 架构设计，使用 Qwen3-VL 文本编码器与 Turbo 4步 LoRA 极速出图。',
+    supportedCategories: ['krea2', 'krea', 'turbo'],
+    workflow: {
+      "1": {
+        "class_type": "UNETLoader",
+        "inputs": {
+          "unet_name": "krea2_turbo_fp8_scaled.safetensors",
+          "weight_dtype": "default"
+        }
+      },
+      "2": {
+        "class_type": "CLIPLoader",
+        "inputs": {
+          "clip_name": "qwen3vl_4b_fp8_scaled.safetensors",
+          "type": "krea2"
+        }
+      },
+      "3": {
+        "class_type": "VAELoader",
+        "inputs": {
+          "vae_name": "qwen_image_vae.safetensors"
+        }
+      },
+      "4": {
+        "class_type": "LoraLoaderModelOnly",
+        "inputs": {
+          "lora_name": "minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
+          "model": ["1", 0],
+          "strength_model": 1.0
+        }
+      },
+      "5": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "clip": ["2", 0],
+          "text": "masterpiece, best quality, expressive anime comic illustration, black and white manga panel, clean lineart"
+        }
+      },
+      "6": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "clip": ["2", 0],
+          "text": "lowres, bad anatomy, deformed, bad hands, blurry"
+        }
+      },
+      "7": {
+        "class_type": "EmptyLatentImage",
+        "inputs": {
+          "batch_size": 1,
+          "height": 1024,
+          "width": 1024
+        }
+      },
+      "8": {
+        "class_type": "KSampler",
+        "inputs": {
+          "cfg": 1.0,
+          "denoise": 1.0,
+          "latent_image": ["7", 0],
+          "model": ["4", 0],
+          "negative": ["6", 0],
+          "positive": ["5", 0],
+          "sampler_name": "euler",
+          "scheduler": "simple",
+          "seed": 0,
+          "steps": 4
+        }
+      },
+      "9": {
+        "class_type": "VAEDecode",
+        "inputs": {
+          "samples": ["8", 0],
+          "vae": ["3", 0]
+        }
+      },
+      "10": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "filename_prefix": "Comic_Krea2",
+          "images": ["9", 0]
+        }
+      }
+    },
+    positiveNodeId: '5',
+    negativeNodeId: '6',
+    unetNodeId: '1',
+    clipNodeId: '2',
+    vaeNodeId: '3',
+    loraNodeId: '4',
+    samplerNodeId: '8',
+    emptyLatentNodeId: '7',
+    outputNodeId: '10',
+  },
+
+  krea2_standard_comic: {
+    id: 'krea2_standard_comic',
+    name: 'Krea2 + Qwen3-VL 标准漫画工作流 (纯净分立式)',
+    description: '标准分立式 Krea2 模型 + Qwen3-VL 文本编码器 + Qwen VAE，20步 Euler 采样。',
+    supportedCategories: ['krea2', 'krea', 'qwen'],
+    workflow: {
+      "1": {
+        "class_type": "UNETLoader",
+        "inputs": {
+          "unet_name": "krea2_turbo_fp8_scaled.safetensors",
+          "weight_dtype": "default"
+        }
+      },
+      "2": {
+        "class_type": "CLIPLoader",
+        "inputs": {
+          "clip_name": "qwen3vl_4b_fp8_scaled.safetensors",
+          "type": "krea2"
+        }
+      },
+      "3": {
+        "class_type": "VAELoader",
+        "inputs": {
+          "vae_name": "qwen_image_vae.safetensors"
+        }
+      },
+      "4": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "clip": ["2", 0],
+          "text": "masterpiece, best quality, expressive anime manga page, clean lineart, screen tone"
+        }
+      },
+      "5": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "clip": ["2", 0],
+          "text": "lowres, bad anatomy, deformed, worst quality, blurry"
+        }
+      },
+      "6": {
+        "class_type": "EmptyLatentImage",
+        "inputs": {
+          "batch_size": 1,
+          "height": 1024,
+          "width": 1024
+        }
+      },
+      "7": {
+        "class_type": "KSampler",
+        "inputs": {
+          "cfg": 5.0,
+          "denoise": 1.0,
+          "latent_image": ["6", 0],
+          "model": ["1", 0],
+          "negative": ["5", 0],
+          "positive": ["4", 0],
+          "sampler_name": "euler",
+          "scheduler": "simple",
+          "seed": 0,
+          "steps": 20
+        }
+      },
+      "8": {
+        "class_type": "VAEDecode",
+        "inputs": {
+          "samples": ["7", 0],
+          "vae": ["3", 0]
+        }
+      },
+      "9": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "filename_prefix": "Comic_Krea2",
+          "images": ["8", 0]
+        }
+      }
+    },
+    positiveNodeId: '4',
+    negativeNodeId: '5',
+    unetNodeId: '1',
+    clipNodeId: '2',
+    vaeNodeId: '3',
+    samplerNodeId: '7',
+    emptyLatentNodeId: '6',
+    outputNodeId: '9',
+  },
+
   sdxl_comic: {
     id: 'sdxl_comic',
     name: 'SDXL / 动漫大模型 漫画工作流 (推荐)',
@@ -404,7 +589,9 @@ function autoMatchWorkflow(modelName, { loras = [], diffusionModels = [], textEn
     lowerName.includes('diffusion');
 
   if (!templateKey || !WORKFLOW_TEMPLATES[templateKey]) {
-    if (isDiffusionModel) {
+    if (lowerName.includes('krea') || lowerName.includes('qwen3vl') || lowerName.includes('qwen')) {
+      templateKey = loras && loras.length > 0 ? 'krea2_turbo_comic' : 'krea2_standard_comic';
+    } else if (isDiffusionModel) {
       templateKey = 'split_unet_comic';
     } else if (lowerName.includes('flux')) {
       templateKey = 'flux_comic';

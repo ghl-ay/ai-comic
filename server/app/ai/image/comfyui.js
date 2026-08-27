@@ -109,11 +109,14 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
     const isDiffusionModel = (currentModel && availableUnets.some(u => u === currentModel || u.includes(currentModel) || currentModel.includes(u)))
       || (availableCkpts.length === 0 && availableUnets.length > 0)
       || /krea|minimax|qwen|diffusion|unet|flux/i.test(currentModel || '')
-      || this.extra.templateId === 'split_unet_comic';
+      || this.extra.templateId === 'split_unet_comic'
+      || this.extra.templateId === 'krea2_turbo_comic'
+      || this.extra.templateId === 'krea2_standard_comic';
 
     if (!workflow) {
+      const preferred = this.extra.templateId || (isDiffusionModel ? 'krea2_turbo_comic' : null);
       const matched = autoMatchWorkflow(currentModel, {
-        preferredTemplate: isDiffusionModel ? 'split_unet_comic' : this.extra.templateId,
+        preferredTemplate: preferred,
         diffusionModels: availableUnets,
         textEncoders: availableClips,
         vaes: availableVaes,

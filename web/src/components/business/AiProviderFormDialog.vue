@@ -423,9 +423,41 @@
                   class="mb-2"
                 />
 
+                <div class="mb-2">
+                  <v-alert
+                    v-if="hasCustomWorkflow"
+                    type="success"
+                    variant="tonal"
+                    density="compact"
+                    class="text-caption"
+                    icon="mdi-code-json"
+                  >
+                    <strong>自定义 JSON 模式生效中：</strong>生图时将直接执行下方编辑框内的完整 JSON 工作流。
+                  </v-alert>
+                  <v-alert
+                    v-else
+                    type="info"
+                    variant="tonal"
+                    density="compact"
+                    class="text-caption"
+                    icon="mdi-auto-fix"
+                  >
+                    <strong>模板自动匹配模式生效中：</strong>当前选用「{{ currentTemplateTitle }}」，生图时自动绑定所选模型。
+                  </v-alert>
+                </div>
+
                 <div class="d-flex align-center justify-space-between mb-1">
-                  <span class="text-caption font-weight-medium">自定义 ComfyUI Prompt Workflow JSON:</span>
-                  <div class="d-flex ga-1">
+                  <span class="text-caption font-weight-medium">ComfyUI Prompt Workflow JSON:</span>
+                  <div class="d-flex ga-1 flex-wrap">
+                    <v-btn
+                      size="x-small"
+                      variant="tonal"
+                      color="secondary"
+                      prepend-icon="mdi-file-document-edit-outline"
+                      @click="loadTemplateIntoEditor"
+                    >
+                      载入当前模板到编辑器
+                    </v-btn>
                     <v-btn
                       size="x-small"
                       variant="text"
@@ -439,7 +471,7 @@
                       color="warning"
                       @click="resetWorkflowToTemplate"
                     >
-                      重置为模板
+                      清空(恢复模板自动模式)
                     </v-btn>
                   </div>
                 </div>
@@ -449,7 +481,7 @@
                   variant="outlined"
                   density="compact"
                   class="font-mono text-caption"
-                  placeholder="留空则自动按模板和所选 Checkpoint 实时组装"
+                  placeholder="留空则自动按上方模板和所选模型实时组装执行"
                 />
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -680,7 +712,9 @@ const generatingAiWorkflow = ref(false)
 const aiGenResultExplanation = ref('')
 
 const templateOptions = [
-  { title: '分立式模型 (UNet + TextEncoder + VAE) 漫画工作流', value: 'split_unet_comic' },
+  { title: 'Krea2 + Qwen3-VL 极速漫画工作流 (Turbo 4步)', value: 'krea2_turbo_comic' },
+  { title: 'Krea2 + Qwen3-VL 标准漫画工作流 (纯净分立式)', value: 'krea2_standard_comic' },
+  { title: '分立式通用模型 (UNet + TextEncoder + VAE) 漫画工作流', value: 'split_unet_comic' },
   { title: 'SDXL / 动漫大模型 漫画工作流 (推荐)', value: 'sdxl_comic' },
   { title: 'SD 1.5 二次元/漫画标准工作流', value: 'sd15_comic' },
   { title: 'SDXL + LoRA 漫画风格强化工作流', value: 'sdxl_lora_comic' },
@@ -898,19 +932,52 @@ async function onFetchModels() {
   }
 }
 
+const hasCustomWorkflow = computed(() => {
+  return !!(rawWorkflowText.value && rawWorkflowText.value.trim())
+})
+
+const currentTemplateTitle = computed(() => {
+  const opt = templateOptions.find(t => t.value === form.extra.templateId)
+  return opt ? opt.title : form.extra.templateId || '默认模板'
+})
+
+async function loadTemplateIntoEditor() {
+  try {
+    const res = await aiProviderApi.getComfyUITemplates()
+    const templates = res.templates || []
+    const target = templates.find(t => t.id === form.extra.templateId) || templates[0]
+    if (target && target.workflow) {
+      const cloned = JSON.parse(JSON.stringify(target.workflow))
+      // 填入当前选中的主模型
+      if (target.checkpointNodeId && cloned[target.checkpointNodeId]?.inputs && form.model) {
+        cloned[target.checkpointNodeId].inputs.ckpt_name = form.model
+      }
+      if (target.unetNodeId && cloned[target.unetNodeId]?.inputs && form.model) {
+        cloned[target.unetNodeId].inputs.unet_name = form.model
+      }
+      rawWorkflowText.value = JSON.stringify(cloned, null, 2)
+      form.extra.workflow = cloned
+    } else {
+      alert('未找到该模板详情')
+    }
+  } catch (err) {
+    alert('载入模板失败: ' + err.message)
+  }
+}
+
 function onModelSelect(modelName) {
   if (!modelName) return
   if (form.protocol === 'comfyui') {
     aiGenCheckpoint.value = modelName
     const lower = modelName.toLowerCase()
-    const isDiff = (comfyData.diffusionModels || []).includes(modelName) ||
-      lower.includes('krea') ||
+    if (lower.includes('krea') || lower.includes('qwen')) {
+      form.extra.templateId = comfyData.loras?.length > 0 ? 'krea2_turbo_comic' : 'krea2_standard_comic'
+    } else if (
+      (comfyData.diffusionModels || []).includes(modelName) ||
       lower.includes('minimax') ||
-      lower.includes('qwen') ||
       lower.includes('diffusion') ||
       lower.includes('unet')
-
-    if (isDiff) {
+    ) {
       form.extra.templateId = 'split_unet_comic'
     } else if (lower.includes('flux')) {
       form.extra.templateId = 'flux_comic'
