@@ -329,6 +329,27 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
       }
     }
 
+    // 5. 全局节点自适应校准与兼容性兜底（针对 Krea2、Flux、SD3 等现代多模态扩散模型）
+    const workflowStr = JSON.stringify(workflow).toLowerCase();
+    const isKrea = workflowStr.includes('krea') || (currentModel && currentModel.toLowerCase().includes('krea')) || workflowStr.includes('qwen3vl') || workflowStr.includes('qwen');
+    const isFlux = !isKrea && (workflowStr.includes('flux') || (currentModel && currentModel.toLowerCase().includes('flux')));
+    const isSd3 = !isKrea && !isFlux && (workflowStr.includes('sd3') || (currentModel && currentModel.toLowerCase().includes('sd3')));
+
+    for (const [, node] of Object.entries(workflow)) {
+      if (!node || typeof node !== 'object') continue;
+
+      if (node.class_type === 'CLIPLoader') {
+        node.inputs = node.inputs || {};
+        if (isKrea) {
+          node.inputs.type = 'krea2';
+        } else if (isFlux) {
+          node.inputs.type = 'flux';
+        } else if (isSd3) {
+          node.inputs.type = 'sd3';
+        }
+      }
+    }
+
     return workflow;
   }
 

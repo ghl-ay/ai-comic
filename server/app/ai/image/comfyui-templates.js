@@ -318,7 +318,7 @@ const WORKFLOW_TEMPLATES = {
         "class_type": "CLIPLoader",
         "inputs": {
           "clip_name": "",
-          "type": "stable_diffusion"
+          "type": "krea2"
         }
       },
       "3": {
