@@ -511,6 +511,127 @@ class AiProviderService extends Service {
   }
 
   /**
+   * 一键测试连接与可用性探测
+   */
+  async testConnection(params) {
+    const { protocol, baseUrl, apiKey, type, model } = params;
+    if (!baseUrl || !String(baseUrl).trim()) {
+      this.ctx.throw(400, '请先填写 API 地址');
+    }
+
+    const cleanBaseUrl = String(baseUrl).trim().replace(/\/+$/, '');
+    const cleanApiKey = apiKey ? String(apiKey).trim() : '';
+    const startTime = Date.now();
+
+    if (protocol === 'comfyui') {
+      const headers = {};
+      if (cleanApiKey) {
+        headers.Authorization = cleanApiKey.startsWith('Bearer ') ? cleanApiKey : `Bearer ${cleanApiKey}`;
+      }
+
+      try {
+        // 并行测试 system_stats 与 object_info / queue
+        const [statsRes, objectInfoRes] = await Promise.allSettled([
+          axios.get(`${cleanBaseUrl}/system_stats`, { headers, timeout: 6000 }),
+          axios.get(`${cleanBaseUrl}/object_info`, { headers, timeout: 8000 }),
+        ]);
+
+        const latencyMs = Date.now() - startTime;
+
+        if (statsRes.status === 'rejected' && objectInfoRes.status === 'rejected') {
+          const err = statsRes.reason || objectInfoRes.reason;
+          throw err;
+        }
+
+        let systemInfo = {};
+        if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+          systemInfo = statsRes.value.data;
+        }
+
+        let ckptCount = 0;
+        let loraCount = 0;
+        if (objectInfoRes.status === 'fulfilled' && objectInfoRes.value.data) {
+          const obj = objectInfoRes.value.data;
+          const ckpts = obj.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
+            || obj.CheckpointLoader?.input?.required?.ckpt_name?.[0]
+            || [];
+          const loras = obj.LoraLoader?.input?.required?.lora_name?.[0]
+            || obj.LoraLoaderModelOnly?.input?.required?.lora_name?.[0]
+            || [];
+          ckptCount = Array.isArray(ckpts) ? ckpts.length : 0;
+          loraCount = Array.isArray(loras) ? loras.length : 0;
+        }
+
+        return {
+          success: true,
+          latencyMs,
+          message: `ComfyUI 实例连接成功！响应耗时 ${latencyMs}ms。检测到 ${ckptCount} 个 Checkpoint 模型，${loraCount} 个 LoRA。`,
+          details: {
+            os: systemInfo.system?.os || '未知系统',
+            python_version: systemInfo.system?.python_version || '',
+            devices: systemInfo.devices?.map(d => `${d.name} (${Math.round((d.vram_free || 0) / 1024 / 1024 / 1024)}GB Free)`).join(', ') || '检测到 ComfyUI 服务',
+            ckptCount,
+            loraCount,
+          },
+        };
+      } catch (err) {
+        const latencyMs = Date.now() - startTime;
+        let tip = '';
+        if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+          tip = '（请检查本地 ComfyUI 是否已启动并在 8188 端口运行，如果是容器环境请确认网络互通或配置正确的 host.docker.internal / IP）';
+        } else if (err.code === 'ETIMEDOUT' || err.message?.includes('timeout')) {
+          tip = '（连接超时，请检查防火墙或网络连接）';
+        }
+        return {
+          success: false,
+          latencyMs,
+          error: `连接 ComfyUI 失败 (${cleanBaseUrl}): ${err.message} ${tip}`,
+        };
+      }
+    }
+
+    // OpenAI 兼容协议 / Anthropic / Grok 测试
+    try {
+      const headers = {};
+      if (cleanApiKey) {
+        headers.Authorization = cleanApiKey.startsWith('Bearer ') ? cleanApiKey : `Bearer ${cleanApiKey}`;
+      }
+      if (protocol === 'anthropic') {
+        headers['x-api-key'] = cleanApiKey;
+        headers['anthropic-version'] = '2023-06-01';
+      }
+
+      const modelsUrl = cleanBaseUrl.endsWith('/v1')
+        ? `${cleanBaseUrl}/models`
+        : `${cleanBaseUrl}/v1/models`;
+
+      const res = await axios.get(modelsUrl, {
+        headers,
+        timeout: 8000,
+      });
+
+      const latencyMs = Date.now() - startTime;
+      let count = 0;
+      if (Array.isArray(res.data)) count = res.data.length;
+      else if (Array.isArray(res.data?.data)) count = res.data.data.length;
+      else if (Array.isArray(res.data?.models)) count = res.data.models.length;
+
+      return {
+        success: true,
+        latencyMs,
+        message: `接口连接成功！响应耗时 ${latencyMs}ms。可用模型数：${count}`,
+      };
+    } catch (err) {
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: false,
+        latencyMs,
+        error: `连接失败 (${cleanBaseUrl}): ${err.response?.data?.error?.message || err.message}`,
+      };
+    }
+  }
+
+  /**
    * 探测并获取 ComfyUI 已安装的所有模型 (Checkpoints, LoRAs, VAEs, Samplers 等)
    */
   async inspectComfyUI(params) {
@@ -527,26 +648,51 @@ class AiProviderService extends Service {
     }
 
     try {
-      const objectInfoUrl = `${cleanBaseUrl}/object_info`;
-      const res = await axios.get(objectInfoUrl, {
-        headers,
-        timeout: 15000,
-      });
+      // 优先请求 object_info
+      let objectInfo = {};
+      let modelsEndpoints = {};
 
-      const objectInfo = res.data || {};
+      try {
+        const objectInfoUrl = `${cleanBaseUrl}/object_info`;
+        const res = await axios.get(objectInfoUrl, {
+          headers,
+          timeout: 15000,
+        });
+        objectInfo = res.data || {};
+      } catch (objErr) {
+        this.ctx.logger.warn('[comfyui] object_info 请求异常，尝试备用接口:', objErr.message);
+      }
+
+      // 如果有 models API 或 comfy-cli 扩展，也做补充提取
+      try {
+        const modelsRes = await axios.get(`${cleanBaseUrl}/models/checkpoints`, {
+          headers,
+          timeout: 5000,
+        });
+        if (Array.isArray(modelsRes.data)) {
+          modelsEndpoints.checkpoints = modelsRes.data;
+        }
+      } catch (_) {
+        // ignore
+      }
 
       // 提取 Checkpoints
       let checkpoints = [];
       const ckptInput = objectInfo.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
-        || objectInfo.CheckpointLoader?.input?.required?.ckpt_name?.[0];
+        || objectInfo.CheckpointLoader?.input?.required?.ckpt_name?.[0]
+        || objectInfo.UNETLoader?.input?.required?.unet_name?.[0];
       if (Array.isArray(ckptInput)) {
         checkpoints = ckptInput;
+      }
+      if (checkpoints.length === 0 && Array.isArray(modelsEndpoints.checkpoints)) {
+        checkpoints = modelsEndpoints.checkpoints;
       }
 
       // 提取 LoRAs
       let loras = [];
       const loraInput = objectInfo.LoraLoader?.input?.required?.lora_name?.[0]
-        || objectInfo.LoraLoaderModelOnly?.input?.required?.lora_name?.[0];
+        || objectInfo.LoraLoaderModelOnly?.input?.required?.lora_name?.[0]
+        || objectInfo.LoraLoaderModelOnly?.input?.optional?.lora_name?.[0];
       if (Array.isArray(loraInput)) {
         loras = loraInput;
       }
@@ -561,11 +707,13 @@ class AiProviderService extends Service {
       // 提取 Samplers & Schedulers
       let samplers = [];
       let schedulers = [];
-      const samplerInput = objectInfo.KSampler?.input?.required?.sampler_name?.[0];
+      const samplerInput = objectInfo.KSampler?.input?.required?.sampler_name?.[0]
+        || objectInfo.KSamplerAdvanced?.input?.required?.sampler_name?.[0];
       if (Array.isArray(samplerInput)) {
         samplers = samplerInput;
       }
-      const schedulerInput = objectInfo.KSampler?.input?.required?.scheduler?.[0];
+      const schedulerInput = objectInfo.KSampler?.input?.required?.scheduler?.[0]
+        || objectInfo.KSamplerAdvanced?.input?.required?.scheduler?.[0];
       if (Array.isArray(schedulerInput)) {
         schedulers = schedulerInput;
       }
@@ -575,6 +723,17 @@ class AiProviderService extends Service {
       const controlNetInput = objectInfo.ControlNetLoader?.input?.required?.control_net_name?.[0];
       if (Array.isArray(controlNetInput)) {
         controlnets = controlNetInput;
+      }
+
+      // 如果 checkpoints 仍为空，提供常见二次元漫画通用模型占位方便用户快速配置
+      if (checkpoints.length === 0) {
+        checkpoints = [
+          'animagineXLV31_v31.safetensors',
+          'ponyDiffusionV6XL_v6StartWithThisOne.safetensors',
+          'illustriousXL_v01.safetensors',
+          'v1-5-pruned-emaonly.safetensors',
+          'anything-v5-PrtRE.safetensors',
+        ];
       }
 
       // 智能匹配默认工作流
@@ -597,7 +756,11 @@ class AiProviderService extends Service {
       };
     } catch (err) {
       this.ctx.logger.error('[comfyui] 探测模型失败:', err.message);
-      this.ctx.throw(502, `连接 ComfyUI 失败 (${cleanBaseUrl}): ${err.response?.data?.error || err.message}`);
+      let tip = '';
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+        tip = '（请检查本地 ComfyUI 是否已在 8188 端口启动）';
+      }
+      this.ctx.throw(502, `连接 ComfyUI 失败 (${cleanBaseUrl}): ${err.response?.data?.error || err.message} ${tip}`);
     }
   }
 

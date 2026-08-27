@@ -105,6 +105,17 @@ class AiProviderController extends Controller {
     }
   }
 
+  async testConnection() {
+    const { ctx } = this;
+    try {
+      const data = await ctx.service.aiProvider.testConnection(ctx.request.body || {});
+      ctx.body = data;
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
+
   async inspectComfyUI() {
     const { ctx } = this;
     try {

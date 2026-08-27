@@ -70,6 +70,7 @@ module.exports = app => {
   // AI 提供商（options 登录可读；CRUD 需管理员）
   router.get('/api/ai-providers/options', app.middleware.jwt(), controller.aiProvider.options);
   router.get('/api/ai-providers', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.index);
+  router.post('/api/ai-providers/test-connection', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.testConnection);
   router.post('/api/ai-providers/fetch-models', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.fetchModels);
   router.post('/api/ai-providers/comfyui/inspect', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.inspectComfyUI);
   router.get('/api/ai-providers/comfyui/templates', app.middleware.jwt(), app.middleware.admin(), controller.aiProvider.getComfyUITemplates);

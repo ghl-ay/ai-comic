@@ -27,7 +27,10 @@
 
       <v-divider />
 
-      <v-card-text class="pt-4" style="max-height: 70vh;">
+      <v-card-text
+        class="pt-4"
+        style="max-height: 70vh;"
+      >
         <!-- 类型选择 -->
         <v-select
           v-model="form.type"
@@ -63,15 +66,62 @@
         />
 
         <!-- Base URL -->
-        <v-text-field
-          v-model="form.baseUrl"
-          label="API Base URL"
-          :hint="baseUrlHint"
-          persistent-hint
-          class="mb-3"
-          variant="outlined"
-          density="comfortable"
-        />
+        <div class="mb-3">
+          <div class="d-flex align-center ga-2 mb-1">
+            <v-text-field
+              v-model="form.baseUrl"
+              label="API Base URL"
+              :hint="baseUrlHint"
+              persistent-hint
+              variant="outlined"
+              density="comfortable"
+              class="flex-grow-1"
+            />
+            <v-btn
+              color="info"
+              variant="tonal"
+              prepend-icon="mdi-transit-connection-variant"
+              :loading="testingConnection"
+              density="comfortable"
+              style="height: 48px; margin-top: -22px;"
+              @click="onTestConnection"
+            >
+              一键测试连接
+            </v-btn>
+          </div>
+
+          <!-- 测试连接结果提示条 -->
+          <v-alert
+            v-if="testResult"
+            :type="testResult.success ? 'success' : 'error'"
+            variant="tonal"
+            density="compact"
+            class="mt-2 text-caption"
+            closable
+            @click:close="testResult = null"
+          >
+            <div class="font-weight-medium">
+              {{ testResult.success ? testResult.message : testResult.error }}
+            </div>
+            <div v-if="testResult.details" class="mt-1 text-caption text-medium-emphasis">
+              <span v-if="testResult.details.devices">硬件: {{ testResult.details.devices }}</span>
+              <span v-if="testResult.details.python_version" class="ml-2">Python: {{ testResult.details.python_version }}</span>
+            </div>
+          </v-alert>
+
+          <!-- ComfyUI 本地连接特别提示 -->
+          <v-alert
+            v-if="form.protocol === 'comfyui'"
+            type="info"
+            variant="text"
+            density="compact"
+            class="mt-1 text-caption pa-0"
+          >
+            <div class="text-medium-emphasis">
+              💡 提示：若应用部署在云端/容器中，而 ComfyUI 运行在您的个人电脑上，请使用公网 IP、内网穿透（如 cpolar、ngrok）或填入真实可访问的局域网 IP。
+            </div>
+          </v-alert>
+        </div>
 
         <!-- API Key (ComfyUI 下为可选 Token) -->
         <v-text-field
@@ -114,7 +164,10 @@
           </div>
 
           <!-- 模型拉取成功提示 / 快速选择 Chips -->
-          <div v-if="fetchedModels.length > 0" class="mt-2 p-2 rounded bg-surface-variant">
+          <div
+            v-if="fetchedModels.length > 0"
+            class="mt-2 p-2 rounded bg-surface-variant"
+          >
             <div class="d-flex align-center justify-space-between mb-1">
               <span class="text-caption font-weight-medium">
                 可用模型列表 (共 {{ fetchedModels.length }} 个):
@@ -130,7 +183,10 @@
                 自动匹配工作流
               </v-btn>
             </div>
-            <div class="d-flex flex-wrap ga-1" style="max-height: 100px; overflow-y: auto;">
+            <div
+              class="d-flex flex-wrap ga-1"
+              style="max-height: 100px; overflow-y: auto;"
+            >
               <v-chip
                 v-for="m in fetchedModels.slice(0, 30)"
                 :key="m"
@@ -151,22 +207,45 @@
           <v-divider class="my-3" />
 
           <!-- ComfyUI 本地资产状态展示 -->
-          <div v-if="comfyData.checkpoints" class="mb-3 p-3 bg-surface-variant rounded">
+          <div
+            v-if="comfyData.checkpoints"
+            class="mb-3 p-3 bg-surface-variant rounded"
+          >
             <div class="d-flex align-center ga-2 mb-2">
-              <v-icon icon="mdi-server" color="primary" size="18" />
+              <v-icon
+                icon="mdi-server"
+                color="primary"
+                size="18"
+              />
               <span class="text-subtitle-2">ComfyUI 本地资产状态</span>
             </div>
             <div class="d-flex flex-wrap ga-2 text-caption">
-              <v-chip size="x-small" color="primary" variant="tonal">
+              <v-chip
+                size="x-small"
+                color="primary"
+                variant="tonal"
+              >
                 {{ comfyData.checkpoints?.length || 0 }} Checkpoints
               </v-chip>
-              <v-chip size="x-small" color="secondary" variant="tonal">
+              <v-chip
+                size="x-small"
+                color="secondary"
+                variant="tonal"
+              >
                 {{ comfyData.loras?.length || 0 }} LoRAs
               </v-chip>
-              <v-chip size="x-small" color="info" variant="tonal">
+              <v-chip
+                size="x-small"
+                color="info"
+                variant="tonal"
+              >
                 {{ comfyData.vaes?.length || 0 }} VAEs
               </v-chip>
-              <v-chip size="x-small" color="success" variant="tonal">
+              <v-chip
+                size="x-small"
+                color="success"
+                variant="tonal"
+              >
                 {{ comfyData.controlnets?.length || 0 }} ControlNets
               </v-chip>
             </div>
@@ -199,7 +278,10 @@
           </div>
 
           <!-- 高级参数 / 工作流 JSON -->
-          <v-expansion-panels variant="accordion" class="mb-3">
+          <v-expansion-panels
+            variant="accordion"
+            class="mb-3"
+          >
             <v-expansion-panel title="高级设置 & 工作流 JSON (可选微调)">
               <v-expansion-panel-text>
                 <div class="d-flex ga-2 mb-2">
@@ -345,7 +427,10 @@
     >
       <v-card class="rounded-lg">
         <v-card-title class="text-h6 d-flex align-center ga-2">
-          <v-icon icon="mdi-robot" color="secondary" />
+          <v-icon
+            icon="mdi-robot"
+            color="secondary"
+          />
           <span>让 AI 结合本地模型定制工作流</span>
         </v-card-title>
         <v-divider />
@@ -452,6 +537,8 @@ const form = reactive(createEmptyForm('text'))
 const rawWorkflowText = ref('')
 const fetchedModels = ref([])
 const fetchingModels = ref(false)
+const testingConnection = ref(false)
+const testResult = ref(null)
 const comfyData = reactive({
   checkpoints: [],
   loras: [],
@@ -555,6 +642,7 @@ function resetForm() {
   form.extra = { ...empty.extra }
   rawWorkflowText.value = ''
   fetchedModels.value = []
+  testResult.value = null
   comfyData.checkpoints = []
   comfyData.loras = []
   comfyData.vaes = []
@@ -609,6 +697,32 @@ function onProtocolChange(protocol) {
   if (protocol === 'comfyui') {
     if (!form.baseUrl) form.baseUrl = 'http://127.0.0.1:8188'
     if (!form.name) form.name = '本地 ComfyUI'
+  }
+}
+
+async function onTestConnection() {
+  if (!form.baseUrl) {
+    alert('请先填写 API Base URL')
+    return
+  }
+  testingConnection.value = true
+  testResult.value = null
+  try {
+    const res = await aiProviderApi.testConnection({
+      protocol: form.protocol,
+      baseUrl: form.baseUrl,
+      apiKey: form.apiKey,
+      type: form.type,
+      model: form.model,
+    })
+    testResult.value = res
+  } catch (err) {
+    testResult.value = {
+      success: false,
+      error: '测试失败: ' + (err.response?.data?.error || err.message),
+    }
+  } finally {
+    testingConnection.value = false
   }
 }
 

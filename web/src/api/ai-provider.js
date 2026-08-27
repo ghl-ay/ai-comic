@@ -37,6 +37,11 @@ export default {
     return res.data
   },
 
+  async testConnection(data) {
+    const res = await api.post('/ai-providers/test-connection', data)
+    return res.data
+  },
+
   async inspectComfyUI(data) {
     const res = await api.post('/ai-providers/comfyui/inspect', data)
     return res.data
