@@ -1,0 +1,6 @@
+{
+  "name": "AI Comic Creator",
+  "description": "AI-powered comic creation platform with character consistency, storyboard generation, and multi-provider AI text & image workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

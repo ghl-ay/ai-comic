@@ -6,8 +6,12 @@
       <v-container>
         <v-row align="center">
           <v-col>
-            <h1 class="comics-page__title">我的漫画</h1>
-            <p class="comics-page__subtitle">管理和创作你的漫画作品</p>
+            <h1 class="comics-page__title">
+              我的漫画
+            </h1>
+            <p class="comics-page__subtitle">
+              管理和创作你的漫画作品
+            </p>
           </v-col>
           <v-col cols="auto">
             <div class="comics-page__actions">
@@ -17,7 +21,9 @@
                 class="comics-page__create-btn"
                 @click="openCreateDialog"
               >
-                <v-icon left>mdi-plus</v-icon>
+                <v-icon left>
+                  mdi-plus
+                </v-icon>
                 创建新漫画
               </v-btn>
 
@@ -28,7 +34,9 @@
                 class="comics-page__short-btn"
                 to="/short-comic/create"
               >
-                <v-icon left>mdi-lightning-bolt</v-icon>
+                <v-icon left>
+                  mdi-lightning-bolt
+                </v-icon>
                 创建短篇漫画
               </v-btn>
               
@@ -39,7 +47,9 @@
                 class="comics-page__upload-btn"
                 to="/novel-wizard"
               >
-                <v-icon left>mdi-file-document-plus</v-icon>
+                <v-icon left>
+                  mdi-file-document-plus
+                </v-icon>
                 上传小说生成
               </v-btn>
             </div>
@@ -89,7 +99,9 @@
             size="large"
             @click="openCreateDialog"
           >
-            <v-icon left>mdi-plus</v-icon>
+            <v-icon left>
+              mdi-plus
+            </v-icon>
             开始创作
           </v-btn>
         </template>
@@ -97,7 +109,10 @@
     </v-container>
     
     <!-- 创建漫画对话框 -->
-    <v-dialog v-model="createDialog" max-width="800">
+    <v-dialog
+      v-model="createDialog"
+      max-width="800"
+    >
       <v-card class="comics-page__dialog">
         <v-card-title class="comics-page__dialog-title">
           创建新漫画
@@ -123,12 +138,19 @@
                 :disabled="!createForm.title.trim()"
                 @click="generateWithAi"
               >
-                <v-icon left size="small">mdi-auto-fix</v-icon>
+                <v-icon
+                  left
+                  size="small"
+                >
+                  mdi-auto-fix
+                </v-icon>
                 AI 帮我写风格描述
               </v-btn>
             </div>
 
-            <div class="text-subtitle-2 mb-2">选择风格</div>
+            <div class="text-subtitle-2 mb-2">
+              选择风格
+            </div>
             <StylePresetSelector
               v-model:style-prompt="createForm.stylePrompt"
               v-model:style-preset-id="createForm.stylePresetId"
@@ -138,11 +160,13 @@
         
         <v-card-actions class="comics-page__dialog-actions">
           <v-spacer />
-          <v-btn @click="createDialog = false">取消</v-btn>
+          <v-btn @click="createDialog = false">
+            取消
+          </v-btn>
           <v-btn
             color="primary"
-            @click="createComic"
             :loading="creating"
+            @click="createComic"
           >
             创建
           </v-btn>
@@ -151,7 +175,10 @@
     </v-dialog>
     
     <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400">
+    <v-dialog
+      v-model="deleteDialog"
+      max-width="400"
+    >
       <v-card class="comics-page__dialog">
         <v-card-title class="comics-page__dialog-title">
           确认删除
@@ -163,11 +190,13 @@
         
         <v-card-actions class="comics-page__dialog-actions">
           <v-spacer />
-          <v-btn @click="deleteDialog = false">取消</v-btn>
+          <v-btn @click="deleteDialog = false">
+            取消
+          </v-btn>
           <v-btn
             color="error"
-            @click="deleteComic"
             :loading="deleting"
+            @click="deleteComic"
           >
             删除
           </v-btn>
@@ -180,9 +209,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTheme } from 'vuetify'
-import { useAuthStore } from '../stores/auth'
-import { useThemeStore } from '../stores/theme'
 import comicApi from '../api/comic'
 import ComicCard from '../components/business/ComicCard.vue'
 import FilterToolbar from '../components/business/FilterToolbar.vue'
@@ -195,9 +221,6 @@ const { loading: aiLoading, fillForm: aiFillForm } = useAiFormFill({
 })
 
 const router = useRouter()
-const authStore = useAuthStore()
-const vuetifyTheme = useTheme()
-const themeStore = useThemeStore()
 
 // 状态
 const comics = ref([])
@@ -269,8 +292,12 @@ const filteredComics = computed(() => {
 async function loadComics() {
   try {
     const res = await comicApi.getComics()
-    comics.value = res.comics
+    comics.value = res.comics || []
   } catch (e) {
+    if (e.response?.status === 401) {
+      router.push('/login')
+      return
+    }
     console.error('加载漫画失败', e)
   }
 }

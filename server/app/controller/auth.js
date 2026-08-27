@@ -18,6 +18,7 @@ class AuthController extends Controller {
       const result = await ctx.service.auth.register(username, password);
       ctx.service.auth.setAuthCookie(result.token);
       ctx.body = {
+        token: result.token,
         user: {
           id: result.userId,
           username: result.username,
@@ -44,6 +45,7 @@ class AuthController extends Controller {
       const result = await ctx.service.auth.login(username, password);
       ctx.service.auth.setAuthCookie(result.token);
       ctx.body = {
+        token: result.token,
         user: {
           id: result.userId,
           username: result.username,
@@ -158,6 +160,7 @@ class AuthController extends Controller {
       const result = await ctx.service.oidc.bindExisting(username, password);
       ctx.service.auth.setAuthCookie(result.token);
       ctx.body = {
+        token: result.token,
         user: {
           id: result.userId,
           username: result.username,
@@ -183,6 +186,7 @@ class AuthController extends Controller {
       const result = await ctx.service.oidc.registerAndBind(username, password);
       ctx.service.auth.setAuthCookie(result.token);
       ctx.body = {
+        token: result.token,
         user: {
           id: result.userId,
           username: result.username,

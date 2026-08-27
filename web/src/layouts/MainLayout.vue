@@ -6,9 +6,15 @@
     
     <!-- 主内容区域 -->
     <v-main class="main-layout__content">
-      <router-view v-slot="{ Component, route }">
-        <transition :name="transitionName" mode="out-in">
-          <component :is="Component" :key="route.path" />
+      <router-view v-slot="{ Component, route: currentRoute }">
+        <transition
+          :name="transitionName"
+          mode="out-in"
+        >
+          <component
+            :is="Component"
+            :key="currentRoute.path"
+          />
         </transition>
       </router-view>
     </v-main>

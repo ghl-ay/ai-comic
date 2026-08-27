@@ -1,10 +1,5 @@
 // web/src/api/comic.js
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: '/api',
-  withCredentials: true,
-})
+import api from './client'
 
 export default {
   async getComics() {

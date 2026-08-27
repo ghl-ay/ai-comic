@@ -3,8 +3,19 @@ const jwt = require('jsonwebtoken');
 
 module.exports = (options, app) => {
   return async function jwtMiddleware(ctx, next) {
-    // 从 cookie 获取 token
-    const token = ctx.cookies.get('token', { signed: false });
+    // 从 cookie 或 header 获取 token
+    let token = ctx.cookies.get('token', { signed: false });
+
+    if (!token && ctx.header && ctx.header.authorization) {
+      const parts = ctx.header.authorization.split(' ');
+      if (parts.length === 2 && (parts[0] === 'Bearer' || parts[0] === 'bearer')) {
+        token = parts[1];
+      }
+    }
+
+    if (!token && ctx.query && ctx.query.token) {
+      token = ctx.query.token;
+    }
 
     if (!token) {
       ctx.status = 401;

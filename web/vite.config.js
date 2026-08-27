@@ -14,9 +14,8 @@ export default defineConfig({
   
   // 开发服务器配置
   server: {
-    host: true,
+    host: '0.0.0.0',
     port: 3000,
-    allowedHosts: ['.monkeycode-ai.online'],
     proxy: {
       '/api': {
         target: 'http://localhost:7001',
@@ -35,7 +34,8 @@ export default defineConfig({
   // 构建配置
   build: {
     // 输出目录
-    outDir: 'dist',
+    outDir: resolve(__dirname, '../server/app/public'),
+    emptyOutDir: true,
     
     // 静态资源目录
     assetsDir: 'assets',

@@ -1,10 +1,5 @@
 // web/src/api/auth.js
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: '/api',
-  withCredentials: true, // 携带 cookie
-})
+import api from './client'
 
 export default {
   async register(username, password) {

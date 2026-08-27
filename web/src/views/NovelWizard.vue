@@ -4,8 +4,14 @@
     <v-row>
       <v-col cols="12">
         <div class="d-flex align-center mb-4">
-          <v-btn variant="text" to="/comics" class="mr-4">
-            <v-icon left>mdi-arrow-left</v-icon>
+          <v-btn
+            variant="text"
+            to="/comics"
+            class="mr-4"
+          >
+            <v-icon left>
+              mdi-arrow-left
+            </v-icon>
             返回
           </v-btn>
           <h1>小说转漫画</h1>
@@ -16,7 +22,10 @@
     <!-- 步骤条 -->
     <v-row>
       <v-col cols="12">
-        <v-stepper v-model="store.currentStep" alt-labels>
+        <v-stepper
+          v-model="store.currentStep"
+          alt-labels
+        >
           <v-stepper-header>
             <v-stepper-item
               :value="1"
@@ -99,7 +108,6 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useNovelWizardStore } from '../stores/novelWizard'
 import StepUpload from '../components/wizard/StepUpload.vue'
 import StepStyle from '../components/wizard/StepStyle.vue'
@@ -107,7 +115,6 @@ import StepCharacters from '../components/wizard/StepCharacters.vue'
 import StepChapters from '../components/wizard/StepChapters.vue'
 import StepComplete from '../components/wizard/StepComplete.vue'
 
-const router = useRouter()
 const store = useNovelWizardStore()
 const processing = ref(false)
 

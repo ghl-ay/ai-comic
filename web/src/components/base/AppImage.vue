@@ -1,6 +1,9 @@
 <!-- web/src/components/base/AppImage.vue -->
 <template>
-  <div class="app-image" :class="imageClasses">
+  <div
+    class="app-image"
+    :class="imageClasses"
+  >
     <v-img
       :src="src"
       :alt="alt"
@@ -15,34 +18,60 @@
       @error="onError"
     >
       <template #placeholder>
-        <div class="app-image__placeholder" :style="placeholderStyle">
+        <div
+          class="app-image__placeholder"
+          :style="placeholderStyle"
+        >
           <v-progress-circular
             v-if="loading"
             indeterminate
             color="primary"
             :size="24"
           />
-          <v-icon v-else size="32" color="grey-lighten-1">mdi-image</v-icon>
+          <v-icon
+            v-else
+            size="32"
+            color="grey-lighten-1"
+          >
+            mdi-image
+          </v-icon>
         </div>
       </template>
       
       <template #error>
-        <div class="app-image__error" :style="placeholderStyle">
-          <v-icon size="32" color="grey-lighten-1">mdi-image-broken</v-icon>
-          <span v-if="showErrorText" class="app-image__error-text">图片加载失败</span>
+        <div
+          class="app-image__error"
+          :style="placeholderStyle"
+        >
+          <v-icon
+            size="32"
+            color="grey-lighten-1"
+          >
+            mdi-image-broken
+          </v-icon>
+          <span
+            v-if="showErrorText"
+            class="app-image__error-text"
+          >图片加载失败</span>
         </div>
       </template>
     </v-img>
     
     <!-- 加载状态遮罩 -->
-    <div v-if="loading && showLoadingOverlay" class="app-image__loading-overlay">
-      <v-progress-circular indeterminate color="primary" />
+    <div
+      v-if="loading && showLoadingOverlay"
+      class="app-image__loading-overlay"
+    >
+      <v-progress-circular
+        indeterminate
+        color="primary"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   // 图片源

@@ -3,19 +3,36 @@
   <div class="login-page">
     <!-- 背景装饰 -->
     <div class="login-page__bg-decoration">
-      <div class="login-page__circle login-page__circle--1"></div>
-      <div class="login-page__circle login-page__circle--2"></div>
-      <div class="login-page__dots"></div>
+      <div class="login-page__circle login-page__circle--1" />
+      <div class="login-page__circle login-page__circle--2" />
+      <div class="login-page__dots" />
     </div>
 
-    <v-container fluid class="fill-height position-relative">
-      <v-row align="center" justify="center">
-        <v-col cols="12" sm="10" md="8" lg="6" xl="4">
+    <v-container
+      fluid
+      class="fill-height position-relative"
+    >
+      <v-row
+        align="center"
+        justify="center"
+      >
+        <v-col
+          cols="12"
+          sm="10"
+          md="8"
+          lg="6"
+          xl="4"
+        >
           <div class="login-card">
             <!-- 卡片头部 -->
             <div class="login-card__header">
               <div class="login-card__logo">
-                <v-icon size="48" color="primary">mdi-book-open-page-variant</v-icon>
+                <v-icon
+                  size="48"
+                  color="primary"
+                >
+                  mdi-book-open-page-variant
+                </v-icon>
               </div>
               <h1 class="login-card__title">
                 <span class="login-card__title-main">AI 漫画创作平台</span>
@@ -24,13 +41,27 @@
             </div>
 
             <!-- 标签页 -->
-            <v-tabs v-model="tab" grow class="login-card__tabs">
-              <v-tab value="login" class="login-card__tab">
-                <v-icon left>mdi-login</v-icon>
+            <v-tabs
+              v-model="tab"
+              grow
+              class="login-card__tabs"
+            >
+              <v-tab
+                value="login"
+                class="login-card__tab"
+              >
+                <v-icon left>
+                  mdi-login
+                </v-icon>
                 登录
               </v-tab>
-              <v-tab value="register" class="login-card__tab">
-                <v-icon left>mdi-account-plus</v-icon>
+              <v-tab
+                value="register"
+                class="login-card__tab"
+              >
+                <v-icon left>
+                  mdi-account-plus
+                </v-icon>
                 注册
               </v-tab>
             </v-tabs>
@@ -40,7 +71,10 @@
               <v-window v-model="tab">
                 <!-- 登录表单 -->
                 <v-window-item value="login">
-                  <v-form @submit.prevent="handleLogin" class="login-form">
+                  <v-form
+                    class="login-form"
+                    @submit.prevent="handleLogin"
+                  >
                     <div class="login-form__field">
                       <v-text-field
                         v-model="loginForm.username"
@@ -66,7 +100,12 @@
                       />
                     </div>
 
-                    <v-alert v-if="authStore.error" type="error" class="mb-4" variant="tonal">
+                    <v-alert
+                      v-if="authStore.error"
+                      type="error"
+                      class="mb-4"
+                      variant="tonal"
+                    >
                       {{ authStore.error }}
                     </v-alert>
 
@@ -78,8 +117,21 @@
                       :loading="authStore.loading"
                       class="login-form__submit"
                     >
-                      <v-icon left>mdi-login</v-icon>
+                      <v-icon left>
+                        mdi-login
+                      </v-icon>
                       登录
+                    </v-btn>
+
+                    <v-btn
+                      variant="text"
+                      density="comfortable"
+                      size="small"
+                      color="primary"
+                      class="mt-2 text-none"
+                      @click="fillDemoAccount"
+                    >
+                      填入默认账号 (admin / admin123)
                     </v-btn>
 
                     <template v-if="oidcStatus.enabled">
@@ -94,7 +146,9 @@
                         :loading="oidcStarting"
                         @click="handleOidcLogin"
                       >
-                        <v-icon left>mdi-shield-key-outline</v-icon>
+                        <v-icon left>
+                          mdi-shield-key-outline
+                        </v-icon>
                         {{ oidcStatus.displayName }}
                       </v-btn>
                     </template>
@@ -103,7 +157,10 @@
 
                 <!-- 注册表单 -->
                 <v-window-item value="register">
-                  <v-form @submit.prevent="handleRegister" class="login-form">
+                  <v-form
+                    class="login-form"
+                    @submit.prevent="handleRegister"
+                  >
                     <div class="login-form__field">
                       <v-text-field
                         v-model="registerForm.username"
@@ -150,7 +207,12 @@
                       />
                     </div>
 
-                    <v-alert v-if="authStore.error" type="error" class="mb-4" variant="tonal">
+                    <v-alert
+                      v-if="authStore.error"
+                      type="error"
+                      class="mb-4"
+                      variant="tonal"
+                    >
                       {{ authStore.error }}
                     </v-alert>
 
@@ -162,7 +224,9 @@
                       :loading="authStore.loading"
                       class="login-form__submit"
                     >
-                      <v-icon left>mdi-account-plus</v-icon>
+                      <v-icon left>
+                        mdi-account-plus
+                      </v-icon>
                       注册
                     </v-btn>
                   </v-form>
@@ -223,6 +287,11 @@ const OIDC_ERROR_MESSAGES = {
 function resolveOidcErrorMessage(code) {
   if (!code) return ''
   return OIDC_ERROR_MESSAGES[code] || '第三方登录失败，请重试'
+}
+
+function fillDemoAccount() {
+  loginForm.value.username = 'admin'
+  loginForm.value.password = 'admin123'
 }
 
 async function handleLogin() {

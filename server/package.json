@@ -2,9 +2,9 @@
   "name": "ai-comic-server",
   "version": "1.0.0",
   "scripts": {
-    "start": "egg-scripts start --daemon --title=ai-comic-server",
+    "start": "egg-scripts start --port=7001 --hostname=0.0.0.0 --title=ai-comic-server",
     "stop": "egg-scripts stop --title=ai-comic-server",
-    "dev": "egg-bin dev",
+    "dev": "egg-bin dev --port=7001",
     "test": "egg-bin test",
     "migrate:oidc": "node database/migrate-oidc.js",
     "migrate:ai-providers": "node database/migrate-ai-providers.js"

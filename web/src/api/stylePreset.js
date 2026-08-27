@@ -1,10 +1,5 @@
 // web/src/api/stylePreset.js
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: '/api',
-  withCredentials: true,
-});
+import api from './client';
 
 export const stylePresetApi = {
   list: () => api.get('/style-presets').then(res => res.data),

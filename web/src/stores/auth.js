@@ -21,6 +21,9 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await authApi.register(username, password)
         this.user = res.user
+        if (res.token) {
+          localStorage.setItem('token', res.token)
+        }
         return true
       } catch (err) {
         this.error = err.response?.data?.error || '注册失败'
@@ -36,6 +39,9 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await authApi.login(username, password)
         this.user = res.user
+        if (res.token) {
+          localStorage.setItem('token', res.token)
+        }
         return true
       } catch (err) {
         this.error = err.response?.data?.error || '登录失败'
@@ -51,6 +57,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (e) {
         // ignore
       }
+      localStorage.removeItem('token')
       this.user = null
     },
 
@@ -58,8 +65,12 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await authApi.getMe()
         this.user = res.user
+        if (res.token) {
+          localStorage.setItem('token', res.token)
+        }
       } catch (e) {
         this.user = null
+        localStorage.removeItem('token')
       } finally {
         this.checked = true
       }

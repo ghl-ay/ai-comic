@@ -25,4 +25,12 @@ db.exec(initSql);
 const { seedStylePresets } = require('./seeds/style_presets');
 seedStylePresets(db);
 
+// 默认管理员账号初始化（若无用户）
+const bcrypt = require('bcryptjs');
+const countUsers = db.prepare('SELECT COUNT(*) as count FROM users').get();
+if (countUsers.count === 0) {
+  const hash = bcrypt.hashSync('admin123', 10);
+  db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, 1)').run('admin', hash);
+}
+
 module.exports = db;

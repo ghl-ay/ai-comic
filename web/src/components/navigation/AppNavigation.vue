@@ -8,9 +8,21 @@
     <v-container class="d-flex align-center">
       <!-- Logo -->
       <v-app-bar-title class="d-flex align-center app-navigation__logo">
-        <router-link to="/" class="d-flex align-center text-decoration-none">
-          <v-avatar size="32" class="mr-2" color="primary">
-            <v-icon color="white" size="20">mdi-book-open-page-variant</v-icon>
+        <router-link
+          to="/"
+          class="d-flex align-center text-decoration-none"
+        >
+          <v-avatar
+            size="32"
+            class="mr-2"
+            color="primary"
+          >
+            <v-icon
+              color="white"
+              size="20"
+            >
+              mdi-book-open-page-variant
+            </v-icon>
           </v-avatar>
           <span class="font-weight-bold text-h6 app-navigation__title">AI漫画</span>
         </router-link>
@@ -29,7 +41,12 @@
           class="mx-1 app-navigation__nav-item"
           :class="{ 'app-navigation__nav-item--active': isActive(item.path) }"
         >
-          <v-icon left size="20">{{ item.icon }}</v-icon>
+          <v-icon
+            left
+            size="20"
+          >
+            {{ item.icon }}
+          </v-icon>
           {{ item.title }}
         </v-btn>
       </div>
@@ -38,9 +55,21 @@
       <template v-if="authStore.user">
         <v-menu offset-y>
           <template #activator="{ props }">
-            <v-btn icon v-bind="props" class="ml-2">
-              <v-avatar size="32" color="primary">
-                <v-icon color="white" size="20">mdi-account</v-icon>
+            <v-btn
+              icon
+              v-bind="props"
+              class="ml-2"
+            >
+              <v-avatar
+                size="32"
+                color="primary"
+              >
+                <v-icon
+                  color="white"
+                  size="20"
+                >
+                  mdi-account
+                </v-icon>
               </v-avatar>
             </v-btn>
           </template>
@@ -78,21 +107,39 @@
       </template>
       
       <!-- 移动端菜单按钮 -->
-      <v-btn icon class="d-md-none ml-2" @click="drawer = true">
+      <v-btn
+        icon
+        class="d-md-none ml-2"
+        @click="drawer = true"
+      >
         <v-icon>mdi-menu</v-icon>
       </v-btn>
     </v-container>
   </v-app-bar>
   
   <!-- 移动端抽屉菜单 -->
-  <v-navigation-drawer v-model="drawer" temporary location="right">
+  <v-navigation-drawer
+    v-model="drawer"
+    temporary
+    location="right"
+  >
     <v-list-item class="pa-4">
       <template #prepend>
-        <v-avatar size="40" color="primary">
-          <v-icon color="white" size="24">mdi-account</v-icon>
+        <v-avatar
+          size="40"
+          color="primary"
+        >
+          <v-icon
+            color="white"
+            size="24"
+          >
+            mdi-account
+          </v-icon>
         </v-avatar>
       </template>
-      <v-list-item-title class="font-weight-bold">用户菜单</v-list-item-title>
+      <v-list-item-title class="font-weight-bold">
+        用户菜单
+      </v-list-item-title>
     </v-list-item>
     
     <v-divider />
@@ -122,13 +169,20 @@
         <v-list-item-title>{{ isDark ? '浅色模式' : '深色模式' }}</v-list-item-title>
       </v-list-item>
       
-      <v-list-item v-if="authStore.user" @click="logout">
+      <v-list-item
+        v-if="authStore.user"
+        @click="logout"
+      >
         <template #prepend>
           <v-icon>mdi-logout</v-icon>
         </template>
         <v-list-item-title>退出登录</v-list-item-title>
       </v-list-item>
-      <v-list-item v-else to="/login" @click="drawer = false">
+      <v-list-item
+        v-else
+        to="/login"
+        @click="drawer = false"
+      >
         <template #prepend>
           <v-icon>mdi-login</v-icon>
         </template>
@@ -139,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 import { useAuthStore } from '../../stores/auth'
