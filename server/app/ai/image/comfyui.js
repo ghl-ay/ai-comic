@@ -51,15 +51,29 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
   }
 
   /**
+   * 获取并解析 ComfyUI 已安装的节点与模型资源信息
+   */
+  async getObjectInfo() {
+    try {
+      const response = await axios.get(`${this.baseUrl}/object_info`, {
+        headers: this.getHeaders(),
+        timeout: 6000,
+      });
+      return response.data || {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  /**
    * 组装或解析可执行的 ComfyUI Prompt Workflow
    */
-  buildWorkflow(request) {
+  async buildWorkflow(request) {
     let workflow = null;
     let positiveNodeId = this.extra.positiveNodeId;
     let negativeNodeId = this.extra.negativeNodeId;
     let checkpointNodeId = this.extra.checkpointNodeId;
     let samplerNodeId = this.extra.samplerNodeId;
-    let emptyLatentNodeId = this.extra.emptyLatentNodeId;
 
     if (this.extra.workflow) {
       try {
@@ -74,9 +88,34 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
 
     const currentModel = request.model || this.config.model;
 
+    // 动态探测 ComfyUI 现有资产
+    const objectInfo = await this.getObjectInfo();
+    const availableCkpts = objectInfo.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
+      || objectInfo.CheckpointLoader?.input?.required?.ckpt_name?.[0]
+      || [];
+    const availableUnets = objectInfo.UNETLoader?.input?.required?.unet_name?.[0]
+      || objectInfo.DiffusionModelLoader?.input?.required?.model_name?.[0]
+      || objectInfo.UNETLoaderSimple?.input?.required?.unet_name?.[0]
+      || [];
+    const availableClips = objectInfo.CLIPLoader?.input?.required?.clip_name?.[0]
+      || objectInfo.DualCLIPLoader?.input?.required?.clip_name1?.[0]
+      || objectInfo.TextEncoderLoader?.input?.required?.clip_name?.[0]
+      || [];
+    const availableVaes = objectInfo.VAELoader?.input?.required?.vae_name?.[0]
+      || objectInfo.VAELoaderSimple?.input?.required?.vae_name?.[0]
+      || [];
+
+    const isDiffusionModel = (currentModel && availableUnets.some(u => u === currentModel || u.includes(currentModel) || currentModel.includes(u)))
+      || (availableCkpts.length === 0 && availableUnets.length > 0)
+      || /krea|minimax|qwen|diffusion|unet|flux/i.test(currentModel || '')
+      || this.extra.templateId === 'split_unet_comic';
+
     if (!workflow) {
       const matched = autoMatchWorkflow(currentModel, {
-        preferredTemplate: this.extra.templateId,
+        preferredTemplate: isDiffusionModel ? 'split_unet_comic' : this.extra.templateId,
+        diffusionModels: availableUnets,
+        textEncoders: availableClips,
+        vaes: availableVaes,
       });
       workflow = matched.workflow;
       positiveNodeId = positiveNodeId || matched.positiveNodeId;
@@ -85,28 +124,118 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
       samplerNodeId = samplerNodeId || matched.samplerNodeId;
     }
 
-    // 1. 自动寻找/更新 Checkpoint / UNet 模型节点
-    if (currentModel) {
+    // 辅助函数：模糊或精确匹配模型名称
+    const matchName = (target, list) => {
+      if (!target || !Array.isArray(list) || list.length === 0) return target || (list && list[0]) || '';
+      const exact = list.find(item => item === target);
+      if (exact) return exact;
+      const targetBase = target.replace(/\.(safetensors|ckpt|pt|bin)$/i, '').toLowerCase();
+      const found = list.find(item => item.replace(/\.(safetensors|ckpt|pt|bin)$/i, '').toLowerCase() === targetBase);
+      if (found) return found;
+      const partial = list.find(item => item.toLowerCase().includes(targetBase) || targetBase.includes(item.toLowerCase()));
+      if (partial) return partial;
+      return list[0] || target;
+    };
+
+    // 如果检测到是分立式扩散模型，但工作流中还包含 CheckpointLoaderSimple（例如 SDXL 模板未更换），做无缝动态架构转换
+    if (isDiffusionModel) {
+      // 检查工作流是否有 CheckpointLoader 节点
+      let cpNodeId = null;
+      for (const [nodeId, node] of Object.entries(workflow)) {
+        if (node.class_type === 'CheckpointLoaderSimple' || node.class_type === 'CheckpointLoader') {
+          cpNodeId = nodeId;
+          break;
+        }
+      }
+
+      const selectedUnet = matchName(currentModel, availableUnets);
+      // 智能选取最匹配的 Text Encoder / CLIP
+      let selectedClip = availableClips[0] || '';
+      if (/minimax/i.test(currentModel || '')) {
+        selectedClip = availableClips.find(c => /minimax|32b/i.test(c)) || availableClips.find(c => !/audio/i.test(c)) || availableClips[0] || '';
+      } else {
+        selectedClip = availableClips.find(c => /qwen|4b/i.test(c)) || availableClips.find(c => !/audio/i.test(c)) || availableClips[0] || '';
+      }
+
+      // 智能选取最匹配的 VAE
+      let selectedVae = availableVaes[0] || '';
+      if (/minimax/i.test(currentModel || '')) {
+        selectedVae = availableVaes.find(v => /minimax/i.test(v) && !/audio/i.test(v)) || availableVaes.find(v => !/audio/i.test(v)) || availableVaes[0] || '';
+      } else {
+        selectedVae = availableVaes.find(v => /image|qwen/i.test(v)) || availableVaes.find(v => !/audio/i.test(v)) || availableVaes[0] || '';
+      }
+
+      if (cpNodeId) {
+        // 动态重组：将 CheckpointLoaderSimple 替换为 UNETLoader，并新建 CLIPLoader 和 VAELoader 节点
+        const clipNodeId = `${cpNodeId}_clip_loader`;
+        const vaeNodeId = `${cpNodeId}_vae_loader`;
+
+        workflow[cpNodeId] = {
+          class_type: 'UNETLoader',
+          inputs: {
+            unet_name: selectedUnet,
+            weight_dtype: 'default',
+          },
+        };
+
+        workflow[clipNodeId] = {
+          class_type: 'CLIPLoader',
+          inputs: {
+            clip_name: selectedClip,
+            type: 'stable_diffusion',
+          },
+        };
+
+        workflow[vaeNodeId] = {
+          class_type: 'VAELoader',
+          inputs: {
+            vae_name: selectedVae,
+          },
+        };
+
+        // 重新布线：将原本连到 [cpNodeId, 1] (CLIP) 的节点转连到 [clipNodeId, 0]
+        // 将原本连到 [cpNodeId, 2] (VAE) 的节点转连到 [vaeNodeId, 0]
+        for (const [, node] of Object.entries(workflow)) {
+          if (!node.inputs) continue;
+          for (const [inputKey, val] of Object.entries(node.inputs)) {
+            if (Array.isArray(val) && val.length === 2 && String(val[0]) === String(cpNodeId)) {
+              if (val[1] === 1) {
+                node.inputs[inputKey] = [clipNodeId, 0];
+              } else if (val[1] === 2) {
+                node.inputs[inputKey] = [vaeNodeId, 0];
+              }
+            }
+          }
+        }
+      } else {
+        // 工作流已有 UNETLoader 节点
+        for (const [, node] of Object.entries(workflow)) {
+          if (node.class_type === 'UNETLoader' || node.class_type === 'DiffusionModelLoader') {
+            node.inputs = node.inputs || {};
+            node.inputs.unet_name = selectedUnet;
+          } else if (node.class_type === 'CLIPLoader' && selectedClip) {
+            node.inputs = node.inputs || {};
+            node.inputs.clip_name = selectedClip;
+          } else if (node.class_type === 'VAELoader' && selectedVae) {
+            node.inputs = node.inputs || {};
+            node.inputs.vae_name = selectedVae;
+          }
+        }
+      }
+    } else {
+      // 传统 Checkpoint 工作流更新
+      const selectedCkpt = matchName(currentModel, availableCkpts);
       if (checkpointNodeId && workflow[checkpointNodeId]?.inputs) {
         if (typeof workflow[checkpointNodeId].inputs.ckpt_name !== 'undefined') {
-          workflow[checkpointNodeId].inputs.ckpt_name = currentModel;
+          workflow[checkpointNodeId].inputs.ckpt_name = selectedCkpt;
         } else if (typeof workflow[checkpointNodeId].inputs.unet_name !== 'undefined') {
-          workflow[checkpointNodeId].inputs.unet_name = currentModel;
+          workflow[checkpointNodeId].inputs.unet_name = selectedCkpt;
         }
       } else {
         for (const [nodeId, node] of Object.entries(workflow)) {
           if (node.class_type === 'CheckpointLoaderSimple' || node.class_type === 'CheckpointLoader') {
             node.inputs = node.inputs || {};
-            node.inputs.ckpt_name = currentModel;
-            checkpointNodeId = nodeId;
-            break;
-          } else if (node.class_type === 'UNETLoader' || node.class_type === 'DiffusionModelLoader') {
-            node.inputs = node.inputs || {};
-            if (typeof node.inputs.unet_name !== 'undefined') {
-              node.inputs.unet_name = currentModel;
-            } else if (typeof node.inputs.model_name !== 'undefined') {
-              node.inputs.model_name = currentModel;
-            }
+            node.inputs.ckpt_name = selectedCkpt;
             checkpointNodeId = nodeId;
             break;
           }
@@ -167,7 +296,7 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
   }
 
   async generate(request) {
-    const workflow = this.buildWorkflow(request);
+    const workflow = await this.buildWorkflow(request);
     const clientId = `aicomic_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // 检查是否有参考图需要上传
