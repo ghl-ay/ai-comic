@@ -192,6 +192,8 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
       let selectedClip = '';
       if (/minimax/i.test(currentModel || '')) {
         selectedClip = availableClips.find(c => /minimax|32b/i.test(c)) || availableClips.find(c => !/audio/i.test(c)) || availableClips[0] || '';
+      } else if (/krea|qwen/i.test(currentModel || '')) {
+        selectedClip = availableClips.find(c => /qwen|krea|3vl/i.test(c)) || availableClips.find(c => !/audio/i.test(c)) || availableClips[0] || 'qwen3vl_4b_fp8_scaled.safetensors';
       } else {
         selectedClip = availableClips.find(c => /qwen|4b/i.test(c)) || availableClips.find(c => !/audio/i.test(c)) || availableClips[0] || '';
       }
@@ -200,6 +202,8 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
       let selectedVae = '';
       if (/minimax/i.test(currentModel || '')) {
         selectedVae = availableVaes.find(v => /minimax/i.test(v) && !/audio/i.test(v)) || availableVaes.find(v => !/audio/i.test(v)) || availableVaes[0] || '';
+      } else if (/krea|qwen/i.test(currentModel || '')) {
+        selectedVae = availableVaes.find(v => /image|qwen/i.test(v)) || availableVaes.find(v => !/audio/i.test(v)) || availableVaes[0] || 'qwen_image_vae.safetensors';
       } else {
         selectedVae = availableVaes.find(v => /image|qwen/i.test(v)) || availableVaes.find(v => !/audio/i.test(v)) || availableVaes[0] || '';
       }
@@ -257,7 +261,7 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
             }
           } else if (node.class_type === 'CLIPLoader') {
             node.inputs = node.inputs || {};
-            if (!node.inputs.clip_name && selectedClip) {
+            if ((!node.inputs.clip_name || (/krea/i.test(currentModel || '') && !/qwen|krea/i.test(node.inputs.clip_name))) && selectedClip) {
               node.inputs.clip_name = selectedClip;
             }
             // 确保 type 正确

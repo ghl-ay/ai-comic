@@ -628,27 +628,40 @@ function autoMatchWorkflow(modelName, { loras = [], diffusionModels = [], textEn
 
   // 填入 CLIP / Text Encoder
   if (template.clipNodeId && workflow[template.clipNodeId]?.inputs) {
-    if (textEncoders.length > 0) {
-      workflow[template.clipNodeId].inputs.clip_name = textEncoders[0];
-    }
-    const encoderName = (workflow[template.clipNodeId].inputs.clip_name || '').toLowerCase();
-    if (lowerName.includes('krea') || encoderName.includes('qwen') || encoderName.includes('krea')) {
+    if (lowerName.includes('krea') || templateKey.includes('krea') || templateKey.includes('qwen') || lowerName.includes('qwen')) {
+      const qwenClip = textEncoders.find(c => /qwen|krea|3vl/i.test(c));
+      workflow[template.clipNodeId].inputs.clip_name = qwenClip || textEncoders[0] || 'qwen3vl_4b_fp8_scaled.safetensors';
       workflow[template.clipNodeId].inputs.type = 'krea2';
-    } else if (lowerName.includes('flux') || encoderName.includes('flux') || encoderName.includes('t5')) {
+    } else if (lowerName.includes('flux') || templateKey.includes('flux')) {
+      const fluxClip = textEncoders.find(c => /t5|flux/i.test(c));
+      workflow[template.clipNodeId].inputs.clip_name = fluxClip || textEncoders[0] || '';
       workflow[template.clipNodeId].inputs.type = 'flux';
-    } else if (lowerName.includes('sd3')) {
+    } else if (lowerName.includes('sd3') || templateKey.includes('sd3')) {
+      workflow[template.clipNodeId].inputs.clip_name = textEncoders[0] || '';
       workflow[template.clipNodeId].inputs.type = 'sd3';
+    } else if (textEncoders.length > 0) {
+      workflow[template.clipNodeId].inputs.clip_name = textEncoders[0];
     }
   }
 
   // 填入 VAE
-  if (template.vaeNodeId && workflow[template.vaeNodeId]?.inputs && vaes.length > 0) {
-    workflow[template.vaeNodeId].inputs.vae_name = vaes[0];
+  if (template.vaeNodeId && workflow[template.vaeNodeId]?.inputs) {
+    if (lowerName.includes('krea') || templateKey.includes('krea') || templateKey.includes('qwen') || lowerName.includes('qwen')) {
+      const qwenVae = vaes.find(v => /qwen|image/i.test(v));
+      workflow[template.vaeNodeId].inputs.vae_name = qwenVae || vaes[0] || 'qwen_image_vae.safetensors';
+    } else if (vaes.length > 0) {
+      workflow[template.vaeNodeId].inputs.vae_name = vaes[0];
+    }
   }
 
   // 若存在 LoRA 节点且有可用 LoRA
-  if (template.loraNodeId && workflow[template.loraNodeId]?.inputs && loras.length > 0) {
-    workflow[template.loraNodeId].inputs.lora_name = loras[0];
+  if (template.loraNodeId && workflow[template.loraNodeId]?.inputs) {
+    if (templateKey === 'krea2_turbo_comic') {
+      const turboLora = loras.find(l => /turbo|4step|minimax/i.test(l));
+      workflow[template.loraNodeId].inputs.lora_name = turboLora || loras[0] || 'minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors';
+    } else if (loras.length > 0) {
+      workflow[template.loraNodeId].inputs.lora_name = loras[0];
+    }
   }
 
   return {
