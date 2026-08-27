@@ -3,22 +3,40 @@
   <div class="ai-admin">
     <header class="ai-admin__header">
       <div>
-        <h2 class="ai-admin__title">AI 提供商</h2>
+        <h2 class="ai-admin__title">
+          AI 提供商
+        </h2>
         <p class="ai-admin__subtitle">
           管理多个文本 / 图片模型接入。
         </p>
       </div>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-plus"
+        @click="openCreate"
+      >
         添加提供商
       </v-btn>
     </header>
 
-    <v-tabs v-model="activeTab" color="primary" density="comfortable" class="ai-admin__tabs">
-      <v-tab value="text">文本提供商</v-tab>
-      <v-tab value="image">图片提供商</v-tab>
+    <v-tabs
+      v-model="activeTab"
+      color="primary"
+      density="comfortable"
+      class="ai-admin__tabs"
+    >
+      <v-tab value="text">
+        文本提供商
+      </v-tab>
+      <v-tab value="image">
+        图片提供商
+      </v-tab>
     </v-tabs>
 
-    <v-card class="ai-admin__table-card mt-4" variant="outlined">
+    <v-card
+      class="ai-admin__table-card mt-4"
+      variant="outlined"
+    >
       <v-data-table
         :headers="headers"
         :items="currentItems"
@@ -27,11 +45,26 @@
         :no-data-text="emptyText"
       >
         <template #item.protocol="{ item }">
-          {{ protocolLabel(item.protocol) }}
+          <div class="d-flex align-center ga-1">
+            <span>{{ protocolLabel(item.protocol) }}</span>
+            <v-chip
+              v-if="item.protocol === 'comfyui'"
+              size="x-small"
+              color="purple"
+              variant="tonal"
+            >
+              {{ item.extra?.templateId || (item.extra?.workflow ? '定制工作流' : '工作流') }}
+            </v-chip>
+          </div>
         </template>
         <template #item.status="{ item }">
           <div class="d-flex ga-2 flex-wrap">
-            <v-chip v-if="item.isDefault" size="small" color="primary" variant="flat">
+            <v-chip
+              v-if="item.isDefault"
+              size="small"
+              color="primary"
+              variant="flat"
+            >
               默认
             </v-chip>
             <v-chip
@@ -53,10 +86,19 @@
             >
               设默认
             </v-btn>
-            <v-btn size="small" variant="text" @click="openEdit(item)">
+            <v-btn
+              size="small"
+              variant="text"
+              @click="openEdit(item)"
+            >
               编辑
             </v-btn>
-            <v-btn size="small" variant="text" color="error" @click="confirmRemove(item)">
+            <v-btn
+              size="small"
+              variant="text"
+              color="error"
+              @click="confirmRemove(item)"
+            >
               删除
             </v-btn>
           </div>
@@ -85,7 +127,7 @@ const activeTab = ref('text')
 const loading = ref(false)
 const saving = ref(false)
 const providers = ref([])
-const protocols = ref({ text: ['openai', 'anthropic'], image: ['openai', 'grok'] })
+const protocols = ref({ text: ['openai', 'anthropic'], image: ['openai', 'grok', 'comfyui'] })
 
 const dialogOpen = ref(false)
 const editingId = ref(null)
@@ -115,6 +157,7 @@ function protocolLabel(protocol) {
     openai: 'OpenAI 兼容',
     anthropic: 'Anthropic',
     grok: 'Grok（sub2api）',
+    comfyui: 'ComfyUI (本地/远程)',
   }
   return labels[protocol] || protocol
 }

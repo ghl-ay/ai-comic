@@ -1,9 +1,11 @@
 // server/app/service/ai-provider.js
 const Service = require('egg').Service;
+const axios = require('axios');
 const {
   getSupportedTextProtocols,
   getSupportedImageProtocols,
 } = require('../ai/registry');
+const { WORKFLOW_TEMPLATES, autoMatchWorkflow } = require('../ai/image/comfyui-templates');
 
 class AiProviderService extends Service {
   get textProtocols() {
@@ -87,10 +89,13 @@ class AiProviderService extends Service {
     if (!baseUrl || !String(baseUrl).trim()) {
       this.ctx.throw(400, '请填写 API 地址');
     }
-    if (!model || !String(model).trim()) {
+
+    const isComfyUI = protocol === 'comfyui';
+
+    if (!isComfyUI && (!model || !String(model).trim())) {
       this.ctx.throw(400, '请填写模型名称');
     }
-    if (isCreate && (!apiKey || !String(apiKey).trim())) {
+    if (isCreate && !isComfyUI && (!apiKey || !String(apiKey).trim())) {
       this.ctx.throw(400, '请填写 API Key');
     }
 
@@ -106,8 +111,8 @@ class AiProviderService extends Service {
       name: String(name).trim(),
       protocol,
       baseUrl: String(baseUrl).trim().replace(/\/+$/, ''),
-      model: String(model).trim(),
-      apiKey: apiKey !== undefined && apiKey !== null ? String(apiKey) : undefined,
+      model: model !== undefined && model !== null ? String(model).trim() : (isComfyUI ? 'auto' : ''),
+      apiKey: apiKey !== undefined && apiKey !== null ? String(apiKey).trim() : '',
       enabled: isEnabled,
       isDefault: nextIsDefault,
       extra: extra && typeof extra === 'object' ? extra : {},
@@ -375,6 +380,338 @@ class AiProviderService extends Service {
     }
 
     return this.toRuntimeConfig(row);
+  }
+
+  /**
+   * 一键获取远程提供商大模型列表
+   */
+  async fetchRemoteModels(params) {
+    const { protocol, baseUrl, apiKey, type } = params;
+    if (!baseUrl || !String(baseUrl).trim()) {
+      this.ctx.throw(400, '请先填写 API 地址');
+    }
+
+    const cleanBaseUrl = String(baseUrl).trim().replace(/\/+$/, '');
+    const cleanApiKey = apiKey ? String(apiKey).trim() : '';
+
+    if (protocol === 'comfyui') {
+      return this.inspectComfyUI({ baseUrl: cleanBaseUrl, apiKey: cleanApiKey });
+    }
+
+    if (protocol === 'anthropic') {
+      try {
+        const url = cleanBaseUrl.endsWith('/v1')
+          ? `${cleanBaseUrl}/models`
+          : `${cleanBaseUrl}/v1/models`;
+        const res = await axios.get(url, {
+          headers: {
+            'x-api-key': cleanApiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          timeout: 10000,
+        });
+        const models = (res.data?.data || []).map(m => m.id || m.name).filter(Boolean);
+        if (models.length > 0) {
+          return { models, total: models.length };
+        }
+      } catch (err) {
+        // 部分 Anthropic 中转代理未实现 models 接口，返回预设常用模型列表
+      }
+      return {
+        models: [
+          'claude-3-7-sonnet-20250219',
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-haiku-20241022',
+          'claude-3-opus-20240229',
+        ],
+        fallback: true,
+      };
+    }
+
+    if (protocol === 'grok') {
+      try {
+        const url = cleanBaseUrl.endsWith('/v1')
+          ? `${cleanBaseUrl}/models`
+          : `${cleanBaseUrl}/v1/models`;
+        const res = await axios.get(url, {
+          headers: cleanApiKey ? { Authorization: `Bearer ${cleanApiKey}` } : {},
+          timeout: 10000,
+        });
+        const models = (res.data?.data || []).map(m => m.id || m.name).filter(Boolean);
+        if (models.length > 0) {
+          return { models, total: models.length };
+        }
+      } catch (err) {
+        // fallback
+      }
+      return {
+        models: [
+          'grok-imagine-image',
+          'grok-2-vision-1212',
+          'grok-2-image',
+          'grok-beta',
+        ],
+        fallback: true,
+      };
+    }
+
+    // OpenAI 兼容协议 (OpenAI / DeepSeek / Ollama / SiliconFlow / OpenRouter / Moonshot / etc.)
+    try {
+      const url = cleanBaseUrl.endsWith('/v1')
+        ? `${cleanBaseUrl}/models`
+        : `${cleanBaseUrl}/v1/models`;
+
+      const headers = {};
+      if (cleanApiKey) {
+        headers.Authorization = cleanApiKey.startsWith('Bearer ')
+          ? cleanApiKey
+          : `Bearer ${cleanApiKey}`;
+      }
+
+      const res = await axios.get(url, {
+        headers,
+        timeout: 12000,
+      });
+
+      let rawList = [];
+      if (Array.isArray(res.data)) {
+        rawList = res.data;
+      } else if (Array.isArray(res.data?.data)) {
+        rawList = res.data.data;
+      } else if (Array.isArray(res.data?.models)) {
+        // Ollama native api format: { models: [{ name: '...' }] }
+        rawList = res.data.models;
+      }
+
+      const models = rawList
+        .map(item => (typeof item === 'string' ? item : item.id || item.name))
+        .filter(Boolean);
+
+      // 按类型做智能推荐排序或筛选
+      if (type === 'image') {
+        models.sort((a, b) => {
+          const aImg = a.toLowerCase().includes('image') || a.toLowerCase().includes('dall-e') || a.toLowerCase().includes('flux');
+          const bImg = b.toLowerCase().includes('image') || b.toLowerCase().includes('dall-e') || b.toLowerCase().includes('flux');
+          if (aImg && !bImg) return -1;
+          if (!aImg && bImg) return 1;
+          return a.localeCompare(b);
+        });
+      } else {
+        models.sort((a, b) => a.localeCompare(b));
+      }
+
+      return {
+        models,
+        total: models.length,
+      };
+    } catch (err) {
+      this.ctx.logger.warn('[ai-provider] 获取模型列表失败:', err.message);
+      this.ctx.throw(502, `获取模型列表失败 (${cleanBaseUrl}): ${err.response?.data?.error?.message || err.message}`);
+    }
+  }
+
+  /**
+   * 探测并获取 ComfyUI 已安装的所有模型 (Checkpoints, LoRAs, VAEs, Samplers 等)
+   */
+  async inspectComfyUI(params) {
+    const { baseUrl, apiKey } = params;
+    if (!baseUrl || !String(baseUrl).trim()) {
+      this.ctx.throw(400, '请填写 ComfyUI 实例地址');
+    }
+
+    const cleanBaseUrl = String(baseUrl).trim().replace(/\/+$/, '');
+    const headers = {};
+    if (apiKey && String(apiKey).trim()) {
+      const key = String(apiKey).trim();
+      headers.Authorization = key.startsWith('Bearer ') ? key : `Bearer ${key}`;
+    }
+
+    try {
+      const objectInfoUrl = `${cleanBaseUrl}/object_info`;
+      const res = await axios.get(objectInfoUrl, {
+        headers,
+        timeout: 15000,
+      });
+
+      const objectInfo = res.data || {};
+
+      // 提取 Checkpoints
+      let checkpoints = [];
+      const ckptInput = objectInfo.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
+        || objectInfo.CheckpointLoader?.input?.required?.ckpt_name?.[0];
+      if (Array.isArray(ckptInput)) {
+        checkpoints = ckptInput;
+      }
+
+      // 提取 LoRAs
+      let loras = [];
+      const loraInput = objectInfo.LoraLoader?.input?.required?.lora_name?.[0]
+        || objectInfo.LoraLoaderModelOnly?.input?.required?.lora_name?.[0];
+      if (Array.isArray(loraInput)) {
+        loras = loraInput;
+      }
+
+      // 提取 VAEs
+      let vaes = [];
+      const vaeInput = objectInfo.VAELoader?.input?.required?.vae_name?.[0];
+      if (Array.isArray(vaeInput)) {
+        vaes = vaeInput;
+      }
+
+      // 提取 Samplers & Schedulers
+      let samplers = [];
+      let schedulers = [];
+      const samplerInput = objectInfo.KSampler?.input?.required?.sampler_name?.[0];
+      if (Array.isArray(samplerInput)) {
+        samplers = samplerInput;
+      }
+      const schedulerInput = objectInfo.KSampler?.input?.required?.scheduler?.[0];
+      if (Array.isArray(schedulerInput)) {
+        schedulers = schedulerInput;
+      }
+
+      // 提取 ControlNets
+      let controlnets = [];
+      const controlNetInput = objectInfo.ControlNetLoader?.input?.required?.control_net_name?.[0];
+      if (Array.isArray(controlNetInput)) {
+        controlnets = controlNetInput;
+      }
+
+      // 智能匹配默认工作流
+      const defaultCkpt = checkpoints[0] || '';
+      const matched = autoMatchWorkflow(defaultCkpt, { loras });
+
+      return {
+        models: checkpoints,
+        comfyData: {
+          checkpoints,
+          loras,
+          vaes,
+          samplers,
+          schedulers,
+          controlnets,
+          templates: Object.values(WORKFLOW_TEMPLATES),
+          matchedWorkflow: matched,
+        },
+        total: checkpoints.length,
+      };
+    } catch (err) {
+      this.ctx.logger.error('[comfyui] 探测模型失败:', err.message);
+      this.ctx.throw(502, `连接 ComfyUI 失败 (${cleanBaseUrl}): ${err.response?.data?.error || err.message}`);
+    }
+  }
+
+  /**
+   * 返回 ComfyUI 工作流预设模板列表
+   */
+  getComfyUITemplates() {
+    return Object.values(WORKFLOW_TEMPLATES);
+  }
+
+  /**
+   * 让文本大模型根据用户本地模型与漫画需求生成定制 ComfyUI 工作流
+   */
+  async generateComfyUIWorkflow(params) {
+    const {
+      textProviderId = null,
+      styleRequirement,
+      checkpoint,
+      lora,
+      availableModels = {},
+      resolution = '1024x1024',
+    } = params;
+
+    const { checkpoints = [], loras = [], samplers = [] } = availableModels;
+
+    const systemPrompt = `你是一位精通 ComfyUI 架构与 AI 漫画绘制的专家。
+你的任务是根据用户指定的漫画风格需求以及用户本地已有的模型文件，生成一份可直接提交给 ComfyUI /prompt 接口执行的 API 格式 Workflow JSON。
+
+【ComfyUI API 格式规范】
+1. Workflow 必须是一个以节点 ID（如 "1", "2", "3"）为 key 的 JSON 对象。
+2. 每个节点必须包含:
+   - "class_type": 节点类名（如 "CheckpointLoaderSimple", "CLIPTextEncode", "EmptyLatentImage", "KSampler", "VAEDecode", "SaveImage", "LoraLoader" 等）
+   - "inputs": 该节点的参数输入与连线。对于节点连线，格式为 [来源节点ID字符串, 来源输出槽位索引数字]。
+3. 必须包含完整的漫画出图管线：
+   - Checkpoint 加载节点 (CheckpointLoaderSimple)
+   - 正向提示词节点 (CLIPTextEncode): 包含针对用户漫画需求的精美风格词（如日漫、网点线稿、黑白分镜、电影光影等）
+   - 负向提示词节点 (CLIPTextEncode): 包含漫画常用的高质量负向词 (lowres, bad anatomy, bad hands, blurry 等)
+   - 空潜空间节点 (EmptyLatentImage): 设置宽高等
+   - 采样节点 (KSampler): 设置合理 steps (20-30), cfg (6-8), sampler_name, scheduler, denoise: 1
+   - VAE 解码节点 (VAEDecode)
+   - 保存图片节点 (SaveImage): filename_prefix 为 "Comic_AI"
+4. 若指定了 LoRA，需合理插入 LoraLoader 并将 model 和 clip 连接到正负向 CLIP 及采样器。
+
+【必须输出的 JSON 结构】
+你必须返回一个严格合法的 JSON 对象，不要附加任何 Markdown 代码块或额外文字：
+{
+  "workflow": { ...完整的节点字典... },
+  "positiveNodeId": "正向提示词节点ID",
+  "negativeNodeId": "负向提示词节点ID",
+  "checkpointNodeId": "CheckpointLoader节点ID",
+  "samplerNodeId": "KSampler节点ID",
+  "explanation": "工作流设计思路与特点说明",
+  "recommendedParams": {
+    "steps": 28,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "resolution": "${resolution}"
+  }
+}`;
+
+    const userPrompt = `用户漫画风格与剧情需求: ${styleRequirement || '标准二次元精美漫画分镜，清晰线稿与黑白网点'}
+指定使用 Checkpoint: ${checkpoint || checkpoints[0] || '默认模型'}
+指定使用 LoRA (可选): ${lora || (loras.length > 0 ? loras[0] : '无')}
+目标出图分辨率: ${resolution}
+本地已安装 Checkpoints 参考: ${checkpoints.slice(0, 10).join(', ')}
+本地已安装 LoRAs 参考: ${loras.slice(0, 10).join(', ')}
+本地支持的采样器: ${samplers.slice(0, 10).join(', ')}
+
+请为该需求生成最适配的 ComfyUI 工作流。`;
+
+    try {
+      const { protocol, config } = await this.ctx.service.aiText.getProtocol(textProviderId);
+      const res = await protocol.chat({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.3,
+        responseFormat: 'json_object',
+      });
+
+      const parsed = JSON.parse(res.content.replace(/```json\n?|\n?```/g, '').trim());
+      if (!parsed.workflow || typeof parsed.workflow !== 'object') {
+        throw new Error('AI 生成的工作流格式不正确');
+      }
+
+      // 验证必要节点连接
+      const wf = parsed.workflow;
+      if (parsed.checkpointNodeId && wf[parsed.checkpointNodeId]?.inputs && checkpoint) {
+        wf[parsed.checkpointNodeId].inputs.ckpt_name = checkpoint;
+      }
+
+      return parsed;
+    } catch (err) {
+      this.ctx.logger.error('[comfyui] AI 生成工作流失败:', err);
+      // 回退到自动匹配模板
+      const fallback = autoMatchWorkflow(checkpoint || checkpoints[0] || '', { loras });
+      return {
+        workflow: fallback.workflow,
+        positiveNodeId: fallback.positiveNodeId,
+        negativeNodeId: fallback.negativeNodeId,
+        checkpointNodeId: fallback.checkpointNodeId,
+        samplerNodeId: fallback.samplerNodeId,
+        explanation: '（AI 智能生成降级回退）已根据本地模型特性自动匹配最佳预设漫画工作流。',
+        recommendedParams: {
+          steps: 28,
+          cfg: 7.0,
+          sampler: 'dpmpp_2m',
+          scheduler: 'karras',
+          resolution,
+        },
+      };
+    }
   }
 }
 

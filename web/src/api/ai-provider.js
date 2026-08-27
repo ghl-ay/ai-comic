@@ -31,4 +31,24 @@ export default {
     const res = await api.post(`/ai-providers/${id}/set-default`)
     return res.data
   },
+
+  async fetchModels(data) {
+    const res = await api.post('/ai-providers/fetch-models', data)
+    return res.data
+  },
+
+  async inspectComfyUI(data) {
+    const res = await api.post('/ai-providers/comfyui/inspect', data)
+    return res.data
+  },
+
+  async getComfyUITemplates() {
+    const res = await api.get('/ai-providers/comfyui/templates')
+    return res.data
+  },
+
+  async generateComfyUIWorkflow(data) {
+    const res = await api.post('/ai-providers/comfyui/generate-workflow', data)
+    return res.data
+  },
 }

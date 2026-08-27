@@ -93,6 +93,50 @@ class AiProviderController extends Controller {
       ctx.body = { error: err.message };
     }
   }
+
+  async fetchModels() {
+    const { ctx } = this;
+    try {
+      const data = await ctx.service.aiProvider.fetchRemoteModels(ctx.request.body || {});
+      ctx.body = data;
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
+
+  async inspectComfyUI() {
+    const { ctx } = this;
+    try {
+      const data = await ctx.service.aiProvider.inspectComfyUI(ctx.request.body || {});
+      ctx.body = data;
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
+
+  async getComfyUITemplates() {
+    const { ctx } = this;
+    try {
+      const templates = ctx.service.aiProvider.getComfyUITemplates();
+      ctx.body = { templates };
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
+
+  async generateComfyUIWorkflow() {
+    const { ctx } = this;
+    try {
+      const result = await ctx.service.aiProvider.generateComfyUIWorkflow(ctx.request.body || {});
+      ctx.body = result;
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  }
 }
 
 module.exports = AiProviderController;

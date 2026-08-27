@@ -5,6 +5,7 @@ const OpenAITextProtocol = require('./text/openai');
 const AnthropicTextProtocol = require('./text/anthropic');
 const OpenAIImageProtocol = require('./image/openai');
 const GrokImageProtocol = require('./image/grok');
+const ComfyUIImageProtocol = require('./image/comfyui');
 
 const textProtocols = {
   openai: OpenAITextProtocol,
@@ -14,6 +15,7 @@ const textProtocols = {
 const imageProtocols = {
   openai: OpenAIImageProtocol,
   grok: GrokImageProtocol,
+  comfyui: ComfyUIImageProtocol,
 };
 
 function createTextProtocol(protocol, config) {
