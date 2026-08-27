@@ -103,9 +103,15 @@
             <div class="font-weight-medium">
               {{ testResult.success ? testResult.message : testResult.error }}
             </div>
-            <div v-if="testResult.details" class="mt-1 text-caption text-medium-emphasis">
+            <div
+              v-if="testResult.details"
+              class="mt-1 text-caption text-medium-emphasis"
+            >
               <span v-if="testResult.details.devices">硬件: {{ testResult.details.devices }}</span>
-              <span v-if="testResult.details.python_version" class="ml-2">Python: {{ testResult.details.python_version }}</span>
+              <span
+                v-if="testResult.details.python_version"
+                class="ml-2"
+              >Python: {{ testResult.details.python_version }}</span>
             </div>
           </v-alert>
 
@@ -165,15 +171,15 @@
 
           <!-- 模型拉取成功提示 / 快速选择 Chips -->
           <div
-            v-if="fetchedModels.length > 0"
-            class="mt-2 p-2 rounded bg-surface-variant"
+            v-if="fetchedModels.length > 0 || (form.protocol === 'comfyui' && hasAnyComfyModel)"
+            class="mt-2 p-3 rounded bg-surface-variant"
           >
-            <div class="d-flex align-center justify-space-between mb-1">
+            <div class="d-flex align-center justify-space-between mb-2">
               <span class="text-caption font-weight-medium">
-                可用模型列表 (共 {{ fetchedModels.length }} 个):
+                {{ form.protocol === 'comfyui' ? '检测到的本地模型库' : `可用模型列表 (共 ${fetchedModels.length} 个):` }}
               </span>
               <v-btn
-                v-if="form.protocol === 'comfyui' && comfyData.checkpoints?.length"
+                v-if="form.protocol === 'comfyui' && (comfyData.checkpoints?.length || comfyData.diffusionModels?.length)"
                 size="x-small"
                 variant="text"
                 color="primary"
@@ -183,9 +189,12 @@
                 自动匹配工作流
               </v-btn>
             </div>
+
+            <!-- 非 ComfyUI 协议的标准模型 Chips -->
             <div
+              v-if="form.protocol !== 'comfyui'"
               class="d-flex flex-wrap ga-1"
-              style="max-height: 100px; overflow-y: auto;"
+              style="max-height: 120px; overflow-y: auto;"
             >
               <v-chip
                 v-for="m in fetchedModels.slice(0, 30)"
@@ -198,6 +207,106 @@
               >
                 {{ m }}
               </v-chip>
+            </div>
+
+            <!-- ComfyUI 分类资产清晰呈现 -->
+            <div
+              v-else
+              class="d-flex flex-column ga-2"
+            >
+              <!-- 扩散模型 / UNet (如 Krea, MiniMax, Qwen, Flux) -->
+              <div v-if="comfyData.diffusionModels?.length">
+                <div class="text-caption text-medium-emphasis mb-1">
+                  📦 扩散模型 / Diffusion Models (UNet):
+                </div>
+                <div class="d-flex flex-wrap ga-1">
+                  <v-chip
+                    v-for="m in comfyData.diffusionModels"
+                    :key="m"
+                    size="x-small"
+                    :color="form.model === m ? 'primary' : 'default'"
+                    :variant="form.model === m ? 'flat' : 'outlined'"
+                    class="cursor-pointer"
+                    @click="form.model = m; onModelSelect(m)"
+                  >
+                    {{ m }}
+                  </v-chip>
+                </div>
+              </div>
+
+              <!-- 传统完整 Checkpoints -->
+              <div v-if="comfyData.checkpoints?.length">
+                <div class="text-caption text-medium-emphasis mb-1">
+                  🎯 检查点模型 / Checkpoints:
+                </div>
+                <div class="d-flex flex-wrap ga-1">
+                  <v-chip
+                    v-for="m in comfyData.checkpoints"
+                    :key="m"
+                    size="x-small"
+                    :color="form.model === m ? 'primary' : 'default'"
+                    :variant="form.model === m ? 'flat' : 'outlined'"
+                    class="cursor-pointer"
+                    @click="form.model = m; onModelSelect(m)"
+                  >
+                    {{ m }}
+                  </v-chip>
+                </div>
+              </div>
+
+              <!-- LoRA 模型 -->
+              <div v-if="comfyData.loras?.length">
+                <div class="text-caption text-medium-emphasis mb-1">
+                  ✨ 漫画/风格 LoRAs:
+                </div>
+                <div class="d-flex flex-wrap ga-1">
+                  <v-chip
+                    v-for="l in comfyData.loras"
+                    :key="l"
+                    size="x-small"
+                    color="secondary"
+                    variant="tonal"
+                  >
+                    {{ l }}
+                  </v-chip>
+                </div>
+              </div>
+
+              <!-- Text Encoders -->
+              <div v-if="comfyData.textEncoders?.length">
+                <div class="text-caption text-medium-emphasis mb-1">
+                  📝 文本编码器 / Text Encoders:
+                </div>
+                <div class="d-flex flex-wrap ga-1">
+                  <v-chip
+                    v-for="t in comfyData.textEncoders"
+                    :key="t"
+                    size="x-small"
+                    color="info"
+                    variant="tonal"
+                  >
+                    {{ t }}
+                  </v-chip>
+                </div>
+              </div>
+
+              <!-- VAEs -->
+              <div v-if="comfyData.vaes?.length">
+                <div class="text-caption text-medium-emphasis mb-1">
+                  🎨 解码器 / VAEs:
+                </div>
+                <div class="d-flex flex-wrap ga-1">
+                  <v-chip
+                    v-for="v in comfyData.vaes"
+                    :key="v"
+                    size="x-small"
+                    color="teal"
+                    variant="tonal"
+                  >
+                    {{ v }}
+                  </v-chip>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -541,12 +650,24 @@ const testingConnection = ref(false)
 const testResult = ref(null)
 const comfyData = reactive({
   checkpoints: [],
+  diffusionModels: [],
+  textEncoders: [],
   loras: [],
   vaes: [],
   samplers: [],
   schedulers: [],
   controlnets: [],
   templates: [],
+})
+
+const hasAnyComfyModel = computed(() => {
+  return (
+    (comfyData.checkpoints?.length || 0) +
+    (comfyData.diffusionModels?.length || 0) +
+    (comfyData.loras?.length || 0) +
+    (comfyData.textEncoders?.length || 0) +
+    (comfyData.vaes?.length || 0) > 0
+  )
 })
 
 // AI 智能生成工作流状态
@@ -559,6 +680,7 @@ const generatingAiWorkflow = ref(false)
 const aiGenResultExplanation = ref('')
 
 const templateOptions = [
+  { title: '分立式模型 (UNet + TextEncoder + VAE) 漫画工作流', value: 'split_unet_comic' },
   { title: 'SDXL / 动漫大模型 漫画工作流 (推荐)', value: 'sdxl_comic' },
   { title: 'SD 1.5 二次元/漫画标准工作流', value: 'sd15_comic' },
   { title: 'SDXL + LoRA 漫画风格强化工作流', value: 'sdxl_lora_comic' },
@@ -576,8 +698,12 @@ const availableModelNames = computed(() => {
   if (fetchedModels.value.length > 0) {
     return fetchedModels.value
   }
-  if (form.protocol === 'comfyui' && comfyData.checkpoints?.length > 0) {
-    return comfyData.checkpoints
+  if (form.protocol === 'comfyui') {
+    const list = [
+      ...(comfyData.diffusionModels || []),
+      ...(comfyData.checkpoints || []),
+    ]
+    return Array.from(new Set(list))
   }
   return []
 })
@@ -749,11 +875,10 @@ async function onFetchModels() {
 
     if (res.comfyData) {
       Object.assign(comfyData, res.comfyData)
-      if (res.comfyData.checkpoints?.length > 0) {
-        if (!form.model) {
-          form.model = res.comfyData.checkpoints[0]
-        }
-        aiGenCheckpoint.value = form.model
+      const primaryModel = res.comfyData.diffusionModels?.[0] || res.comfyData.checkpoints?.[0]
+      if (primaryModel && !form.model) {
+        form.model = primaryModel
+        aiGenCheckpoint.value = primaryModel
       }
       if (res.comfyData.matchedWorkflow) {
         form.extra.templateId = res.comfyData.matchedWorkflow.templateId
@@ -771,7 +896,16 @@ function onModelSelect(modelName) {
   if (form.protocol === 'comfyui') {
     aiGenCheckpoint.value = modelName
     const lower = modelName.toLowerCase()
-    if (lower.includes('flux')) {
+    const isDiff = (comfyData.diffusionModels || []).includes(modelName) ||
+      lower.includes('krea') ||
+      lower.includes('minimax') ||
+      lower.includes('qwen') ||
+      lower.includes('diffusion') ||
+      lower.includes('unet')
+
+    if (isDiff) {
+      form.extra.templateId = 'split_unet_comic'
+    } else if (lower.includes('flux')) {
       form.extra.templateId = 'flux_comic'
     } else if (
       lower.includes('1.5') ||
@@ -781,6 +915,8 @@ function onModelSelect(modelName) {
       lower.includes('meina')
     ) {
       form.extra.templateId = 'sd15_comic'
+    } else if (comfyData.loras?.length > 0 && lower.includes('lora')) {
+      form.extra.templateId = 'sdxl_lora_comic'
     } else {
       form.extra.templateId = 'sdxl_comic'
     }

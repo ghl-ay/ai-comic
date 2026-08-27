@@ -300,17 +300,113 @@ const WORKFLOW_TEMPLATES = {
     emptyLatentNodeId: '5',
     outputNodeId: '9',
   },
+
+  split_unet_comic: {
+    id: 'split_unet_comic',
+    name: '分立式模型 (UNet + TextEncoder + VAE) 漫画工作流',
+    description: '适用于 Krea、MiniMax、Qwen、Flux 等分立模型（Diffusion Models + Text Encoders + VAE）。',
+    supportedCategories: ['krea', 'minimax', 'qwen', 'diffusion', 'unet'],
+    workflow: {
+      "1": {
+        "class_type": "UNETLoader",
+        "inputs": {
+          "unet_name": "",
+          "weight_dtype": "default"
+        }
+      },
+      "2": {
+        "class_type": "CLIPLoader",
+        "inputs": {
+          "clip_name": "",
+          "type": "stable_diffusion"
+        }
+      },
+      "3": {
+        "class_type": "VAELoader",
+        "inputs": {
+          "vae_name": ""
+        }
+      },
+      "4": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "clip": ["2", 0],
+          "text": "masterpiece, best quality, expressive anime manga page, clean lineart, screen tone"
+        }
+      },
+      "5": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+          "clip": ["2", 0],
+          "text": "lowres, bad anatomy, deformed, worst quality, blurry"
+        }
+      },
+      "6": {
+        "class_type": "EmptyLatentImage",
+        "inputs": {
+          "batch_size": 1,
+          "height": 1024,
+          "width": 1024
+        }
+      },
+      "7": {
+        "class_type": "KSampler",
+        "inputs": {
+          "cfg": 6.5,
+          "denoise": 1,
+          "latent_image": ["6", 0],
+          "model": ["1", 0],
+          "negative": ["5", 0],
+          "positive": ["4", 0],
+          "sampler_name": "euler",
+          "scheduler": "normal",
+          "seed": 0,
+          "steps": 20
+        }
+      },
+      "8": {
+        "class_type": "VAEDecode",
+        "inputs": {
+          "samples": ["7", 0],
+          "vae": ["3", 0]
+        }
+      },
+      "9": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "filename_prefix": "Comic_Diffusion",
+          "images": ["8", 0]
+        }
+      }
+    },
+    positiveNodeId: '4',
+    negativeNodeId: '5',
+    unetNodeId: '1',
+    clipNodeId: '2',
+    vaeNodeId: '3',
+    samplerNodeId: '7',
+    emptyLatentNodeId: '6',
+    outputNodeId: '9',
+  },
 };
 
 /**
- * 根据模型名称与可用 LoRA 自动匹配并组装工作流
+ * 根据模型名称与可用 LoRA / 节点资源自动匹配并组装工作流
  */
-function autoMatchWorkflow(checkpointName, { loras = [], preferredTemplate = null } = {}) {
+function autoMatchWorkflow(modelName, { loras = [], diffusionModels = [], textEncoders = [], vaes = [], preferredTemplate = null } = {}) {
   let templateKey = preferredTemplate;
+  const lowerName = (modelName || '').toLowerCase();
+
+  const isDiffusionModel = diffusionModels.includes(modelName) ||
+    lowerName.includes('krea') ||
+    lowerName.includes('minimax') ||
+    lowerName.includes('qwen') ||
+    lowerName.includes('diffusion');
 
   if (!templateKey || !WORKFLOW_TEMPLATES[templateKey]) {
-    const lowerName = (checkpointName || '').toLowerCase();
-    if (lowerName.includes('flux')) {
+    if (isDiffusionModel) {
+      templateKey = 'split_unet_comic';
+    } else if (lowerName.includes('flux')) {
       templateKey = 'flux_comic';
     } else if (
       lowerName.includes('1.5') ||
@@ -335,7 +431,22 @@ function autoMatchWorkflow(checkpointName, { loras = [], preferredTemplate = nul
 
   // 填入 Checkpoint 名称
   if (template.checkpointNodeId && workflow[template.checkpointNodeId]?.inputs) {
-    workflow[template.checkpointNodeId].inputs.ckpt_name = checkpointName || '';
+    workflow[template.checkpointNodeId].inputs.ckpt_name = modelName || '';
+  }
+
+  // 填入 UNet / Diffusion Model 名称
+  if (template.unetNodeId && workflow[template.unetNodeId]?.inputs) {
+    workflow[template.unetNodeId].inputs.unet_name = modelName || diffusionModels[0] || '';
+  }
+
+  // 填入 CLIP / Text Encoder
+  if (template.clipNodeId && workflow[template.clipNodeId]?.inputs && textEncoders.length > 0) {
+    workflow[template.clipNodeId].inputs.clip_name = textEncoders[0];
+  }
+
+  // 填入 VAE
+  if (template.vaeNodeId && workflow[template.vaeNodeId]?.inputs && vaes.length > 0) {
+    workflow[template.vaeNodeId].inputs.vae_name = vaes[0];
   }
 
   // 若存在 LoRA 节点且有可用 LoRA
@@ -350,7 +461,7 @@ function autoMatchWorkflow(checkpointName, { loras = [], preferredTemplate = nul
     workflow,
     positiveNodeId: template.positiveNodeId,
     negativeNodeId: template.negativeNodeId,
-    checkpointNodeId: template.checkpointNodeId,
+    checkpointNodeId: template.checkpointNodeId || template.unetNodeId,
     samplerNodeId: template.samplerNodeId,
     outputNodeId: template.outputNodeId,
   };

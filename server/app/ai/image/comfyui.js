@@ -85,15 +85,28 @@ class ComfyUIImageProtocol extends BaseImageProtocol {
       samplerNodeId = samplerNodeId || matched.samplerNodeId;
     }
 
-    // 1. 自动寻找/更新 Checkpoint 模型节点
+    // 1. 自动寻找/更新 Checkpoint / UNet 模型节点
     if (currentModel) {
       if (checkpointNodeId && workflow[checkpointNodeId]?.inputs) {
-        workflow[checkpointNodeId].inputs.ckpt_name = currentModel;
+        if (typeof workflow[checkpointNodeId].inputs.ckpt_name !== 'undefined') {
+          workflow[checkpointNodeId].inputs.ckpt_name = currentModel;
+        } else if (typeof workflow[checkpointNodeId].inputs.unet_name !== 'undefined') {
+          workflow[checkpointNodeId].inputs.unet_name = currentModel;
+        }
       } else {
         for (const [nodeId, node] of Object.entries(workflow)) {
           if (node.class_type === 'CheckpointLoaderSimple' || node.class_type === 'CheckpointLoader') {
             node.inputs = node.inputs || {};
             node.inputs.ckpt_name = currentModel;
+            checkpointNodeId = nodeId;
+            break;
+          } else if (node.class_type === 'UNETLoader' || node.class_type === 'DiffusionModelLoader') {
+            node.inputs = node.inputs || {};
+            if (typeof node.inputs.unet_name !== 'undefined') {
+              node.inputs.unet_name = currentModel;
+            } else if (typeof node.inputs.model_name !== 'undefined') {
+              node.inputs.model_name = currentModel;
+            }
             checkpointNodeId = nodeId;
             break;
           }

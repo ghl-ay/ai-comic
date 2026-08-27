@@ -549,29 +549,63 @@ class AiProviderService extends Service {
         }
 
         let ckptCount = 0;
+        let diffCount = 0;
         let loraCount = 0;
+        let vaeCount = 0;
+        let textEncoderCount = 0;
+
         if (objectInfoRes.status === 'fulfilled' && objectInfoRes.value.data) {
           const obj = objectInfoRes.value.data;
           const ckpts = obj.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
             || obj.CheckpointLoader?.input?.required?.ckpt_name?.[0]
             || [];
+          const diffs = obj.UNETLoader?.input?.required?.unet_name?.[0]
+            || obj.DiffusionModelLoader?.input?.required?.model_name?.[0]
+            || obj.UNETLoaderSimple?.input?.required?.unet_name?.[0]
+            || [];
           const loras = obj.LoraLoader?.input?.required?.lora_name?.[0]
             || obj.LoraLoaderModelOnly?.input?.required?.lora_name?.[0]
+            || obj.LoraLoaderModelOnly?.input?.optional?.lora_name?.[0]
             || [];
+          const vaes = obj.VAELoader?.input?.required?.vae_name?.[0]
+            || obj.VAELoaderSimple?.input?.required?.vae_name?.[0]
+            || [];
+          const textEncoders = obj.CLIPLoader?.input?.required?.clip_name?.[0]
+            || obj.DualCLIPLoader?.input?.required?.clip_name1?.[0]
+            || obj.TextEncoderLoader?.input?.required?.clip_name?.[0]
+            || [];
+
           ckptCount = Array.isArray(ckpts) ? ckpts.length : 0;
+          diffCount = Array.isArray(diffs) ? diffs.length : 0;
           loraCount = Array.isArray(loras) ? loras.length : 0;
+          vaeCount = Array.isArray(vaes) ? vaes.length : 0;
+          textEncoderCount = Array.isArray(textEncoders) ? textEncoders.length : 0;
         }
+
+        const modelSummary = [];
+        if (ckptCount > 0) modelSummary.push(`${ckptCount} Checkpoints`);
+        if (diffCount > 0) modelSummary.push(`${diffCount} Diffusion/UNet`);
+        if (loraCount > 0) modelSummary.push(`${loraCount} LoRAs`);
+        if (vaeCount > 0) modelSummary.push(`${vaeCount} VAEs`);
+        if (textEncoderCount > 0) modelSummary.push(`${textEncoderCount} Text Encoders`);
+
+        const summaryText = modelSummary.length > 0
+          ? `检测到 ${modelSummary.join('，')}`
+          : '已连接，未检测到模型文件';
 
         return {
           success: true,
           latencyMs,
-          message: `ComfyUI 实例连接成功！响应耗时 ${latencyMs}ms。检测到 ${ckptCount} 个 Checkpoint 模型，${loraCount} 个 LoRA。`,
+          message: `ComfyUI 实例连接成功！响应耗时 ${latencyMs}ms。${summaryText}。`,
           details: {
             os: systemInfo.system?.os || '未知系统',
             python_version: systemInfo.system?.python_version || '',
             devices: systemInfo.devices?.map(d => `${d.name} (${Math.round((d.vram_free || 0) / 1024 / 1024 / 1024)}GB Free)`).join(', ') || '检测到 ComfyUI 服务',
             ckptCount,
+            diffCount,
             loraCount,
+            vaeCount,
+            textEncoderCount,
           },
         };
       } catch (err) {
@@ -676,11 +710,10 @@ class AiProviderService extends Service {
         // ignore
       }
 
-      // 提取 Checkpoints
+      // 提取 Checkpoints (models/checkpoints)
       let checkpoints = [];
       const ckptInput = objectInfo.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
-        || objectInfo.CheckpointLoader?.input?.required?.ckpt_name?.[0]
-        || objectInfo.UNETLoader?.input?.required?.unet_name?.[0];
+        || objectInfo.CheckpointLoader?.input?.required?.ckpt_name?.[0];
       if (Array.isArray(ckptInput)) {
         checkpoints = ckptInput;
       }
@@ -688,7 +721,25 @@ class AiProviderService extends Service {
         checkpoints = modelsEndpoints.checkpoints;
       }
 
-      // 提取 LoRAs
+      // 提取 Diffusion Models / UNet (models/diffusion_models 或 models/unet)
+      let diffusionModels = [];
+      const diffInput = objectInfo.UNETLoader?.input?.required?.unet_name?.[0]
+        || objectInfo.DiffusionModelLoader?.input?.required?.model_name?.[0]
+        || objectInfo.UNETLoaderSimple?.input?.required?.unet_name?.[0];
+      if (Array.isArray(diffInput)) {
+        diffusionModels = diffInput;
+      }
+
+      // 提取 Text Encoders / CLIP (models/text_encoders 或 models/clip)
+      let textEncoders = [];
+      const clipInput = objectInfo.CLIPLoader?.input?.required?.clip_name?.[0]
+        || objectInfo.DualCLIPLoader?.input?.required?.clip_name1?.[0]
+        || objectInfo.TextEncoderLoader?.input?.required?.clip_name?.[0];
+      if (Array.isArray(clipInput)) {
+        textEncoders = clipInput;
+      }
+
+      // 提取 LoRAs (models/loras)
       let loras = [];
       const loraInput = objectInfo.LoraLoader?.input?.required?.lora_name?.[0]
         || objectInfo.LoraLoaderModelOnly?.input?.required?.lora_name?.[0]
@@ -697,9 +748,10 @@ class AiProviderService extends Service {
         loras = loraInput;
       }
 
-      // 提取 VAEs
+      // 提取 VAEs (models/vae)
       let vaes = [];
-      const vaeInput = objectInfo.VAELoader?.input?.required?.vae_name?.[0];
+      const vaeInput = objectInfo.VAELoader?.input?.required?.vae_name?.[0]
+        || objectInfo.VAELoaderSimple?.input?.required?.vae_name?.[0];
       if (Array.isArray(vaeInput)) {
         vaes = vaeInput;
       }
@@ -718,32 +770,34 @@ class AiProviderService extends Service {
         schedulers = schedulerInput;
       }
 
-      // 提取 ControlNets
+      // 提取 ControlNets (models/controlnet)
       let controlnets = [];
       const controlNetInput = objectInfo.ControlNetLoader?.input?.required?.control_net_name?.[0];
       if (Array.isArray(controlNetInput)) {
         controlnets = controlNetInput;
       }
 
-      // 如果 checkpoints 仍为空，提供常见二次元漫画通用模型占位方便用户快速配置
-      if (checkpoints.length === 0) {
-        checkpoints = [
-          'animagineXLV31_v31.safetensors',
-          'ponyDiffusionV6XL_v6StartWithThisOne.safetensors',
-          'illustriousXL_v01.safetensors',
-          'v1-5-pruned-emaonly.safetensors',
-          'anything-v5-PrtRE.safetensors',
-        ];
-      }
+      // 聚合所有可用的生图主模型 (Checkpoints + Diffusion Models)
+      const allMainModels = [
+        ...checkpoints,
+        ...diffusionModels,
+      ];
 
       // 智能匹配默认工作流
-      const defaultCkpt = checkpoints[0] || '';
-      const matched = autoMatchWorkflow(defaultCkpt, { loras });
+      const defaultModel = allMainModels[0] || '';
+      const matched = autoMatchWorkflow(defaultModel, {
+        loras,
+        diffusionModels,
+        textEncoders,
+        vaes,
+      });
 
       return {
-        models: checkpoints,
+        models: allMainModels,
         comfyData: {
           checkpoints,
+          diffusionModels,
+          textEncoders,
           loras,
           vaes,
           samplers,
@@ -752,7 +806,7 @@ class AiProviderService extends Service {
           templates: Object.values(WORKFLOW_TEMPLATES),
           matchedWorkflow: matched,
         },
-        total: checkpoints.length,
+        total: allMainModels.length,
       };
     } catch (err) {
       this.ctx.logger.error('[comfyui] 探测模型失败:', err.message);
